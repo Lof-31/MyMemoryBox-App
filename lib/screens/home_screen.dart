@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
+import '../services/storage_service.dart';
 import '../widgets/level_card.dart';
+import 'card_list_screen.dart';
 import 'create_card_screen.dart';
 import 'review_screen.dart';
 
@@ -13,7 +15,27 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const int _totalLevels = 8;
+  final StorageService _storageService = StorageService();
   final List<Flashcard> _cards = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    final loaded = await _storageService.loadCards();
+    setState(() {
+      _cards.addAll(loaded);
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _persistCards() async {
+    await _storageService.saveCards(_cards);
+  }
 
   int _countTotalCardsByLevel(int level) {
     return _cards.where((card) => card.level == level).length;
@@ -54,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         }
       });
+      await _persistCards();
     }
   }
 
@@ -68,7 +91,34 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _cards.add(newCard);
       });
+      await _persistCards();
     }
+  }
+
+  void _navigateToCardList() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CardListScreen(
+          cards: _cards,
+          onDelete: (id) async {
+            setState(() {
+              _cards.removeWhere((card) => card.id == id);
+            });
+            await _persistCards();
+          },
+          onEdit: (updatedCard) async {
+            setState(() {
+              final index =
+              _cards.indexWhere((card) => card.id == updatedCard.id);
+              if (index != -1) {
+                _cards[index] = updatedCard;
+              }
+            });
+            await _persistCards();
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -79,8 +129,16 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('My Memory Box'),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.list_alt),
+            onPressed: _navigateToCardList,
+          ),
+        ],
       ),
-      body: ListView.builder(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 12),
         itemCount: _totalLevels,
         itemBuilder: (context, index) {
