@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
 import '../widgets/level_card.dart';
 import 'create_card_screen.dart';
+import 'review_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,8 +23,38 @@ class _HomeScreenState extends State<HomeScreen> {
     return _cards.where((card) => card.level == level && card.isDue).length;
   }
 
-  void _onLevelSelected(int level) {
-    // Navigate to review session (Step 4)
+  List<Flashcard> _getDueCardsByLevel(int level) {
+    return _cards.where((card) => card.level == level && card.isDue).toList();
+  }
+
+  Future<void> _onLevelSelected(int level) async {
+    final List<Flashcard> dueCards = _getDueCardsByLevel(level);
+
+    if (dueCards.isEmpty) {
+      return;
+    }
+
+    final List<Flashcard>? reviewedCards =
+    await Navigator.of(context).push<List<Flashcard>>(
+      MaterialPageRoute(
+        builder: (context) => ReviewScreen(
+          level: level,
+          cards: dueCards,
+        ),
+      ),
+    );
+
+    if (reviewedCards != null && reviewedCards.isNotEmpty) {
+      setState(() {
+        for (final updatedCard in reviewedCards) {
+          final int index =
+          _cards.indexWhere((card) => card.id == updatedCard.id);
+          if (index != -1) {
+            _cards[index] = updatedCard;
+          }
+        }
+      });
+    }
   }
 
   Future<void> _navigateToCreateCard() async {
