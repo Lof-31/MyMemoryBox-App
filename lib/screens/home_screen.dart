@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
+import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/level_card.dart';
 import 'card_list_screen.dart';
@@ -16,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const int _totalLevels = 8;
   final StorageService _storageService = StorageService();
+  final NotificationService _notificationService = NotificationService();
   final List<Flashcard> _cards = [];
   bool _isLoading = true;
 
@@ -31,10 +33,12 @@ class _HomeScreenState extends State<HomeScreen> {
       _cards.addAll(loaded);
       _isLoading = false;
     });
+    await _notificationService.syncDailyReminder(_cards);
   }
 
   Future<void> _persistCards() async {
     await _storageService.saveCards(_cards);
+    await _notificationService.syncDailyReminder(_cards);
   }
 
   int _countTotalCardsByLevel(int level) {
