@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
-import '../services/notification_service.dart';
 import '../services/storage_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/level_card.dart';
-import 'card_list_screen.dart';
 import 'create_card_screen.dart';
 import 'review_screen.dart';
+import 'card_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,148 +15,132 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const int _totalLevels = 8;
   final StorageService _storageService = StorageService();
   final NotificationService _notificationService = NotificationService();
-  final List<Flashcard> _cards = [];
+
+  List<Flashcard> _cards = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
+    _loadCards();
   }
 
-  Future<void> _loadInitialData() async {
-    final loaded = await _storageService.loadCards();
+  Future<void> _loadCards() async {
+    final cards = await _storageService.loadCards();
     setState(() {
-      _cards.addAll(loaded);
+      _cards = cards;
       _isLoading = false;
     });
     await _notificationService.syncDailyReminder(_cards);
   }
 
-  Future<void> _persistCards() async {
-    await _storageService.saveCards(_cards);
-    await _notificationService.syncDailyReminder(_cards);
+  Future<void> _deleteCard(String id) async {
+    final updatedList = _cards.where((c) => c.id != id).toList();
+    await _storageService.saveCards(updatedList);
+    _loadCards();
   }
 
-  int _countTotalCardsByLevel(int level) {
-    return _cards.where((card) => card.level == level).length;
+  Future<void> _editCard(Flashcard card) async {
+    final updatedList = _cards.map((c) => c.id == card.id ? card : c).toList();
+    await _storageService.saveCards(updatedList);
+    _loadCards();
   }
 
-  int _countDueCardsByLevel(int level) {
-    return _cards.where((card) => card.level == level && card.isDue).length;
-  }
-
-  List<Flashcard> _getDueCardsByLevel(int level) {
-    return _cards.where((card) => card.level == level && card.isDue).toList();
-  }
-
-  Future<void> _onLevelSelected(int level) async {
-    final List<Flashcard> dueCards = _getDueCardsByLevel(level);
-
-    if (dueCards.isEmpty) {
-      return;
-    }
-
-    final List<Flashcard>? reviewedCards =
-    await Navigator.of(context).push<List<Flashcard>>(
-      MaterialPageRoute(
-        builder: (context) => ReviewScreen(
-          level: level,
-          cards: dueCards,
-        ),
-      ),
-    );
-
-    if (reviewedCards != null && reviewedCards.isNotEmpty) {
-      setState(() {
-        for (final updatedCard in reviewedCards) {
-          final int index =
-          _cards.indexWhere((card) => card.id == updatedCard.id);
-          if (index != -1) {
-            _cards[index] = updatedCard;
-          }
-        }
-      });
-      await _persistCards();
-    }
-  }
-
-  Future<void> _navigateToCreateCard() async {
-    final Flashcard? newCard = await Navigator.of(context).push<Flashcard>(
-      MaterialPageRoute(
-        builder: (context) => const CreateCardScreen(),
-      ),
-    );
-
-    if (newCard != null) {
-      setState(() {
-        _cards.add(newCard);
-      });
-      await _persistCards();
-    }
-  }
-
-  void _navigateToCardList() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => CardListScreen(
-          cards: _cards,
-          onDelete: (id) async {
-            setState(() {
-              _cards.removeWhere((card) => card.id == id);
-            });
-            await _persistCards();
-          },
-          onEdit: (updatedCard) async {
-            setState(() {
-              final index =
-              _cards.indexWhere((card) => card.id == updatedCard.id);
-              if (index != -1) {
-                _cards[index] = updatedCard;
-              }
-            });
-            await _persistCards();
-          },
-        ),
-      ),
-    );
-  }
+  List<Flashcard> get _dueCards => _cards.where((c) => c.isDue).toList();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text('My Memory Box'),
-        centerTitle: true,
-        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.list_alt),
-            onPressed: _navigateToCardList,
+            tooltip: 'All Cards',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CardListScreen(
+                    cards: _cards,
+                    onDelete: _deleteCard,
+                    onEdit: _editCard,
+                  ),
+                ),
+              );
+              _loadCards();
+            },
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        itemCount: _totalLevels,
-        itemBuilder: (context, index) {
-          final int level = index + 1;
-          return LevelCard(
-            level: level,
-            totalCards: _countTotalCardsByLevel(level),
-            dueCards: _countDueCardsByLevel(level),
-            onTap: () => _onLevelSelected(level),
-          );
-        },
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton.icon(
+              onPressed: _dueCards.isEmpty
+                  ? null
+                  : () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ReviewScreen(
+                      cards: _dueCards,
+                      level: 0, // <-- Si ReviewScreen attend un level
+                    ),
+                  ),
+                );
+                _loadCards();
+              },
+              icon: const Icon(Icons.play_arrow),
+              label: Text(
+                _dueCards.isEmpty
+                    ? 'No Cards Due'
+                    : 'Start Review (${_dueCards.length})',
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Memory Boxes',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            ...List.generate(9, (index) {
+              final levelCards = _cards.where((c) => c.level == index).toList();
+              final dueCount = levelCards.where((c) => c.isDue).length;
+              return LevelCard(
+                level: index,
+                totalCards: levelCards.length,
+                dueCount: dueCount,
+              );
+            }),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToCreateCard,
+        onPressed: () async {
+          final created = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CreateCardScreen(),
+            ),
+          );
+          if (created == true || mounted) {
+            _loadCards();
+          }
+        },
         child: const Icon(Icons.add),
       ),
     );

@@ -4,59 +4,35 @@ import 'package:flutter/material.dart';
 class LevelCard extends StatelessWidget {
   final int level;
   final int totalCards;
-  final int dueCards;
-  final VoidCallback onTap;
+  final int dueCount;
 
   const LevelCard({
     super.key,
     required this.level,
     required this.totalCards,
-    required this.dueCards,
-    required this.onTap,
+    required this.dueCount,
   });
-
-  int get _intervalInDays => pow(2, level).toInt();
 
   @override
   Widget build(BuildContext context) {
+    final int intervalDays = pow(2, level).toInt();
+
     return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        onTap: dueCards > 0 ? onTap : null,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: Colors.indigo,
+          backgroundColor: dueCount > 0 ? Colors.orange : Colors.indigo,
           foregroundColor: Colors.white,
           child: Text('$level'),
         ),
-        title: Text(
-          'Level $level',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text('Review interval: $_intervalInDays days'),
-        trailing: _buildBadge(),
-      ),
-    );
-  }
-
-  Widget _buildBadge() {
-    final Color badgeColor = dueCards > 0 ? Colors.green : Colors.grey.shade400;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: badgeColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        '$dueCards / $totalCards ready',
-        style: TextStyle(
-          color: badgeColor,
-          fontWeight: FontWeight.w600,
-          fontSize: 13,
-        ),
+        title: Text('Level $level ($intervalDays ${intervalDays == 1 ? 'day' : 'days'})'),
+        subtitle: Text('Total: $totalCards cards'),
+        trailing: dueCount > 0
+            ? Chip(
+          label: Text('$dueCount due'),
+          backgroundColor: Colors.orange.shade100,
+        )
+            : const Icon(Icons.check_circle_outline, color: Colors.green),
       ),
     );
   }

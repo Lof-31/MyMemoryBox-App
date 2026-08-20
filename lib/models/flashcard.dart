@@ -12,7 +12,7 @@ class Flashcard {
     required this.id,
     required this.frontText,
     required this.backText,
-    this.level = 1,
+    this.level = 0,
     required this.nextReviewDate,
     this.lastReviewedAt,
   });
@@ -26,7 +26,7 @@ class Flashcard {
       id: id,
       frontText: frontText,
       backText: backText,
-      level: 1,
+      level: 0,
       nextReviewDate: DateTime.now(),
     );
   }
@@ -47,8 +47,8 @@ class Flashcard {
   }
 
   Flashcard demote() {
-    const int resetLevel = 1;
-    final int interval = pow(2, resetLevel).toInt();
+    const int resetLevel = 0;
+    final int interval = pow(2, resetLevel).toInt(); // 1 jour
     final DateTime now = DateTime.now();
     return copyWith(
       level: resetLevel,
@@ -91,7 +91,7 @@ class Flashcard {
       id: map['id'] as String,
       frontText: map['frontText'] as String,
       backText: map['backText'] as String,
-      level: map['level'] as int,
+      level: (map['level'] as num?)?.toInt() ?? 0,
       nextReviewDate: DateTime.parse(map['nextReviewDate'] as String),
       lastReviewedAt: map['lastReviewedAt'] != null
           ? DateTime.parse(map['lastReviewedAt'] as String)
