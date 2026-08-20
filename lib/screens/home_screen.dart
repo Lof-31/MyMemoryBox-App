@@ -9,7 +9,12 @@ import 'card_list_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Function(int index)? onThemeChanged;
+
+  const HomeScreen({
+    super.key,
+    this.onThemeChanged,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -174,7 +179,9 @@ class _HomeScreenState extends State<HomeScreen> {
         onDelete: _deleteCard,
         onEdit: _editCard,
       ),
-      const SettingsScreen(),
+      SettingsScreen(
+        onThemeChanged: widget.onThemeChanged,
+      ),
     ];
 
     return Scaffold(

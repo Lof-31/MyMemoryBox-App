@@ -8,6 +8,7 @@ class StorageService {
   static const String _lastReviewDateKey = 'last_daily_review_date';
   static const String _reminderHourKey = 'reminder_hour';
   static const String _reminderMinuteKey = 'reminder_minute';
+  static const String _themeColorIndexKey = 'theme_color_index';
 
   Future<List<Flashcard>> loadCards() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -44,7 +45,7 @@ class StorageService {
 
   Future<TimeOfDay> getReminderTime() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final int hour = prefs.getInt(_reminderHourKey) ?? 8;
+    final int hour = prefs.getInt(_reminderHourKey) ?? 9;
     final int minute = prefs.getInt(_reminderMinuteKey) ?? 0;
     return TimeOfDay(hour: hour, minute: minute);
   }
@@ -53,5 +54,15 @@ class StorageService {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_reminderHourKey, time.hour);
     await prefs.setInt(_reminderMinuteKey, time.minute);
+  }
+
+  Future<int> getThemeColorIndex() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_themeColorIndexKey) ?? 0;
+  }
+
+  Future<void> saveThemeColorIndex(int index) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_themeColorIndexKey, index);
   }
 }
