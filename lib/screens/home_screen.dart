@@ -86,15 +86,26 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: _dueCards.isEmpty
                   ? null
                   : () async {
-                await Navigator.push(
+                final result = await Navigator.push<List<Flashcard>>(
                   context,
                   MaterialPageRoute(
                     builder: (context) => ReviewScreen(
+                      level: 0,
                       cards: _dueCards,
-                      level: 0, // <-- Si ReviewScreen attend un level
                     ),
                   ),
                 );
+
+                if (result != null && result.isNotEmpty) {
+                  final Map<String, Flashcard> updatedMap = {
+                    for (final card in result) card.id: card,
+                  };
+                  final updatedList = _cards.map((card) {
+                    return updatedMap[card.id] ?? card;
+                  }).toList();
+
+                  await _storageService.saveCards(updatedList);
+                }
                 _loadCards();
               },
               icon: const Icon(Icons.play_arrow),
@@ -131,13 +142,16 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          final created = await Navigator.push(
+          final newCard = await Navigator.push<Flashcard>(
             context,
             MaterialPageRoute(
               builder: (context) => const CreateCardScreen(),
             ),
           );
-          if (created == true || mounted) {
+
+          if (newCard != null) {
+            final updatedList = [..._cards, newCard];
+            await _storageService.saveCards(updatedList);
             _loadCards();
           }
         },
