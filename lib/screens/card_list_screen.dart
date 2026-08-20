@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
 
-class CardListScreen extends StatelessWidget {
+class CardListScreen extends StatefulWidget {
   final List<Flashcard> cards;
   final Function(String id) onDelete;
-  final Function(Flashcard updatedCard) onEdit;
+  final Function(Flashcard card) onEdit;
 
   const CardListScreen({
     super.key,
@@ -13,58 +13,70 @@ class CardListScreen extends StatelessWidget {
     required this.onEdit,
   });
 
-  void _showEditDialog(BuildContext context, Flashcard card) {
-    final frontController = TextEditingController(text: card.frontText);
-    final backController = TextEditingController(text: card.backText);
-    final formKey = GlobalKey<FormState>();
+  @override
+  State<CardListScreen> createState() => _CardListScreenState();
+}
+
+class _CardListScreenState extends State<CardListScreen> {
+  String _searchQuery = '';
+
+  List<Flashcard> get _filteredCards {
+    if (_searchQuery.trim().isEmpty) {
+      return widget.cards;
+    }
+    final q = _searchQuery.toLowerCase();
+    return widget.cards
+        .where((c) =>
+    c.frontText.toLowerCase().contains(q) ||
+        c.backText.toLowerCase().contains(q))
+        .toList();
+  }
+
+  void _showEditDialog(Flashcard card) {
+    final frontCtrl = TextEditingController(text: card.frontText);
+    final backCtrl = TextEditingController(text: card.backText);
 
     showDialog(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Edit Flashcard'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: frontController,
-                  decoration: const InputDecoration(labelText: 'Front'),
-                  validator: (value) =>
-                  value == null || value.trim().isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: backController,
-                  decoration: const InputDecoration(labelText: 'Back'),
-                  validator: (value) =>
-                  value == null || value.trim().isEmpty ? 'Required' : null,
-                ),
-              ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Card'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: frontCtrl,
+              decoration: const InputDecoration(labelText: 'Front Text'),
+              maxLines: 2,
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  final updated = card.copyWith(
-                    frontText: frontController.text.trim(),
-                    backText: backController.text.trim(),
-                  );
-                  onEdit(updated);
-                  Navigator.of(dialogContext).pop();
-                }
-              },
-              child: const Text('Save'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: backCtrl,
+              decoration: const InputDecoration(labelText: 'Back Text'),
+              maxLines: 2,
             ),
           ],
-        );
-      },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (frontCtrl.text.trim().isNotEmpty &&
+                  backCtrl.text.trim().isNotEmpty) {
+                final updated = card.copyWith(
+                  frontText: frontCtrl.text.trim(),
+                  backText: backCtrl.text.trim(),
+                );
+                widget.onEdit(updated);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -72,33 +84,118 @@ class CardListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('All Flashcards'),
+        title: const Text('My Cards'),
       ),
-      body: cards.isEmpty
-          ? const Center(child: Text('No flashcards created yet.'))
-          : ListView.separated(
-        itemCount: cards.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final Flashcard card = cards[index];
-          return ListTile(
-            title: Text(card.frontText),
-            subtitle: Text('${card.backText} • Level ${card.level}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () => _showEditDialog(context, card),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search cards...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => onDelete(card.id),
-                ),
-              ],
+                contentPadding: EdgeInsets.symmetric(horizontal: 16),
+              ),
+              onChanged: (val) {
+                setState(() {
+                  _searchQuery = val;
+                });
+              },
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: _filteredCards.isEmpty
+                ? Center(
+              child: Text(
+                widget.cards.isEmpty
+                    ? 'No cards created yet.'
+                    : 'No cards match your search.',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            )
+                : ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: _filteredCards.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final card = _filteredCards[index];
+                final nextDate = card.nextReviewDate;
+                final dateFormatted =
+                    '${nextDate.year}-${nextDate.month.toString().padLeft(2, '0')}-${nextDate.day.toString().padLeft(2, '0')}';
+
+                return Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ExpansionTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.indigo,
+                      foregroundColor: Colors.white,
+                      child: Text('${card.level}'),
+                    ),
+                    title: Text(
+                      card.frontText,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      'Interval: ${card.intervalInDays}d • Next: $dateFormatted',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Text(
+                              'Answer / Translation:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.indigo,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              card.backText,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                IconButton.outlined(
+                                  icon: const Icon(Icons.edit, size: 20),
+                                  onPressed: () => _showEditDialog(card),
+                                  tooltip: 'Edit Card',
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton.outlined(
+                                  icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                                  onPressed: () => widget.onDelete(card.id),
+                                  tooltip: 'Delete Card',
+                                ),
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../widgets/level_card.dart';
 import 'create_card_screen.dart';
 import 'review_screen.dart';
 import 'card_list_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Flashcard> _cards = [];
   bool _isLoading = true;
   bool _hasReviewedToday = false;
+  int _currentNavIndex = 0;
 
   @override
   void initState() {
@@ -59,8 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Flashcard> get _dueCards => _cards.where((c) => c.isDue).toList();
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBoxesView() {
     final bool canReview = !_hasReviewedToday && _dueCards.isNotEmpty;
 
     String buttonLabel;
@@ -75,29 +76,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Memory Box'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.list_alt),
-            tooltip: 'All Cards',
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CardListScreen(
-                    cards: _cards,
-                    onDelete: _deleteCard,
-                    onEdit: _editCard,
-                  ),
-                ),
-              );
-              _loadData();
-            },
-          ),
-        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -147,7 +127,9 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             ...List.generate(9, (index) {
               final levelCards = _cards.where((c) => c.level == index).toList();
-              final dueCount = _hasReviewedToday ? 0 : levelCards.where((c) => c.isDue).length;
+              final dueCount = _hasReviewedToday
+                  ? 0
+                  : levelCards.where((c) => c.isDue).length;
               return LevelCard(
                 level: index,
                 totalCards: levelCards.length,
@@ -173,6 +155,57 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         },
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final List<Widget> pages = [
+      _buildBoxesView(),
+      CardListScreen(
+        cards: _cards,
+        onDelete: _deleteCard,
+        onEdit: _editCard,
+      ),
+      const SettingsScreen(),
+    ];
+
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentNavIndex,
+        children: pages,
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentNavIndex,
+        onDestinationSelected: (int index) {
+          setState(() {
+            _currentNavIndex = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.all_inbox_outlined),
+            selectedIcon: Icon(Icons.all_inbox),
+            label: 'My Boxes',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.style_outlined),
+            selectedIcon: Icon(Icons.style),
+            label: 'My Cards',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
       ),
     );
   }
