@@ -1,15 +1,15 @@
-# My Memory Box 
+# My Memory Box
 
 A spaced repetition flashcard application built with Flutter. It implements a 9-level Leitner system (Level 0 to Level 8) based on powers of two (2^0 to 2^8 days). Available across mobile and web platforms, with offline-first Progressive Web App (PWA) deployment support for iOS.
 
 ---
 
-## Navigation & Features
+## Navigation and Menus
 
 * **My Boxes:** Dashboard displaying the 9 Leitner level boxes, total/due card counts, and the daily review queue (limited to 1 session per day).
-* **My Cards:** Complete inventory of author cards with live text search, interval information, next review dates, in-line card edition, and deletion.
-* **Settings:** Application metadata and spaced repetition configuration.
-* **Offline-First Storage:** Persists flashcard data and daily review completion timestamps locally via `shared_preferences` (`IndexedDB` on Web).
+* **My Cards:** Complete inventory of flashcards with live search, interval information, next review dates, in-line card edition, and deletion.
+* **Settings:** Customizable daily reminder notification time (interactive time picker) and app information.
+* **Offline-First Storage:** Persists flashcard data, daily review completion dates, and notification preferences locally via `shared_preferences` (`IndexedDB` on Web).
 * **Cross-Platform PWA:** Usable as an installable full-screen web app on iOS Safari, Android, and Desktop browsers.
 * **Automated CI/CD:** Auto-deployed to GitHub Pages via GitHub Actions on push to `master`.
 
@@ -31,10 +31,21 @@ A spaced repetition flashcard application built with Flutter. It implements a 9-
 
 ---
 
-## Tech Stack
+## Project Structure
 
-* **Framework:** [Flutter](https://flutter.dev/) (Dart)
-* **Storage:** `shared_preferences`
-* **Identities:** `uuid`
-* **Timezone & Notifications:** `timezone`, `flutter_timezone`, `flutter_local_notifications`
-* **Hosting & CI/CD:** GitHub Pages & GitHub Actions
+```text
+lib/
+├── main.dart               # Application entry point & theme configuration
+├── models/
+│   └── flashcard.dart      # Flashcard data model & Leitner logic
+├── screens/
+│   ├── home_screen.dart    # Main navigation host (Bottom Navigation Bar)
+│   ├── card_list_screen.dart # Searchable card inventory with edit/delete
+│   ├── review_screen.dart  # Interactive study session
+│   ├── create_card_screen.dart # Card authoring screen
+│   └── settings_screen.dart # Daily reminder time configuration
+├── services/
+│   ├── storage_service.dart     # Local data persistence handler
+│   └── notification_service.dart# Local notification scheduling logic
+└── widgets/
+    └── level_card.dart     # Dashboard level card component
