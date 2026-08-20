@@ -4,6 +4,7 @@ import '../models/flashcard.dart';
 
 class StorageService {
   static const String _storageKey = 'flashcards_data';
+  static const String _lastReviewDateKey = 'last_daily_review_date';
 
   Future<List<Flashcard>> loadCards() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -24,5 +25,17 @@ class StorageService {
     final List<Map<String, dynamic>> serialized =
     cards.map((card) => card.toMap()).toList();
     await prefs.setString(_storageKey, jsonEncode(serialized));
+  }
+
+  Future<String?> getLastDailyReviewDate() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_lastReviewDateKey);
+  }
+
+  Future<void> saveLastDailyReviewDate(DateTime date) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String formattedDate =
+        '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    await prefs.setString(_lastReviewDateKey, formattedDate);
   }
 }

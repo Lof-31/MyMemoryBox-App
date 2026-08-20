@@ -22,12 +22,13 @@ class Flashcard {
     required String frontText,
     required String backText,
   }) {
+    final DateTime now = DateTime.now();
     return Flashcard(
       id: id,
       frontText: frontText,
       backText: backText,
       level: 0,
-      nextReviewDate: DateTime.now(),
+      nextReviewDate: DateTime(now.year, now.month, now.day).add(const Duration(days: 1)),
     );
   }
 

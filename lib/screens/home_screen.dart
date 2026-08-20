@@ -20,38 +20,58 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Flashcard> _cards = [];
   bool _isLoading = true;
+  bool _hasReviewedToday = false;
 
   @override
   void initState() {
     super.initState();
-    _loadCards();
+    _loadData();
   }
 
-  Future<void> _loadCards() async {
+  Future<void> _loadData() async {
     final cards = await _storageService.loadCards();
+    final lastReviewDateStr = await _storageService.getLastDailyReviewDate();
+
+    final DateTime now = DateTime.now();
+    final String todayStr =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
     setState(() {
       _cards = cards;
+      _hasReviewedToday = (lastReviewDateStr == todayStr);
       _isLoading = false;
     });
+
     await _notificationService.syncDailyReminder(_cards);
   }
 
   Future<void> _deleteCard(String id) async {
     final updatedList = _cards.where((c) => c.id != id).toList();
     await _storageService.saveCards(updatedList);
-    _loadCards();
+    _loadData();
   }
 
   Future<void> _editCard(Flashcard card) async {
     final updatedList = _cards.map((c) => c.id == card.id ? card : c).toList();
     await _storageService.saveCards(updatedList);
-    _loadCards();
+    _loadData();
   }
 
   List<Flashcard> get _dueCards => _cards.where((c) => c.isDue).toList();
 
   @override
   Widget build(BuildContext context) {
+    final bool canReview = !_hasReviewedToday && _dueCards.isNotEmpty;
+
+    String buttonLabel;
+    if (_hasReviewedToday) {
+      buttonLabel = 'Daily Review Completed';
+    } else if (_dueCards.isEmpty) {
+      buttonLabel = 'No Cards Due';
+    } else {
+      buttonLabel = 'Start Review (${_dueCards.length})';
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Memory Box'),
@@ -70,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               );
-              _loadCards();
+              _loadData();
             },
           ),
         ],
@@ -83,9 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ElevatedButton.icon(
-              onPressed: _dueCards.isEmpty
-                  ? null
-                  : () async {
+              onPressed: canReview
+                  ? () async {
                 final result = await Navigator.push<List<Flashcard>>(
                   context,
                   MaterialPageRoute(
@@ -105,15 +124,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   }).toList();
 
                   await _storageService.saveCards(updatedList);
+                  await _storageService.saveLastDailyReviewDate(DateTime.now());
                 }
-                _loadCards();
-              },
-              icon: const Icon(Icons.play_arrow),
-              label: Text(
-                _dueCards.isEmpty
-                    ? 'No Cards Due'
-                    : 'Start Review (${_dueCards.length})',
-              ),
+                _loadData();
+              }
+                  : null,
+              icon: Icon(_hasReviewedToday ? Icons.check : Icons.play_arrow),
+              label: Text(buttonLabel),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 textStyle: const TextStyle(
@@ -130,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             ...List.generate(9, (index) {
               final levelCards = _cards.where((c) => c.level == index).toList();
-              final dueCount = levelCards.where((c) => c.isDue).length;
+              final dueCount = _hasReviewedToday ? 0 : levelCards.where((c) => c.isDue).length;
               return LevelCard(
                 level: index,
                 totalCards: levelCards.length,
@@ -152,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (newCard != null) {
             final updatedList = [..._cards, newCard];
             await _storageService.saveCards(updatedList);
-            _loadCards();
+            _loadData();
           }
         },
         child: const Icon(Icons.add),
