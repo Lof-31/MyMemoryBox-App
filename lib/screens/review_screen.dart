@@ -54,9 +54,11 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Level ${widget.level} Review'),
+        title: const Text('Daily Review Session'),
       ),
       body: SafeArea(
         child: Padding(
@@ -64,14 +66,29 @@ class _ReviewScreenState extends State<ReviewScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Card ${_currentIndex + 1} of ${_dueCards.length}',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Chip(
+                    avatar: Icon(
+                      _currentCard.isReversed ? Icons.swap_horiz : Icons.arrow_forward,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                    label: Text(
+                      _currentCard.isReversed ? 'Reverse (Back ➔ Front)' : 'Standard (Front ➔ Back)',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  Text(
+                    'Card ${_currentIndex + 1} / ${_dueCards.length}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Expanded(
                 child: Card(
                   elevation: 4,
@@ -84,7 +101,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          _currentCard.frontText,
+                          _currentCard.promptText,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 22,
@@ -94,11 +111,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         if (_isRevealed) ...[
                           const Divider(height: 48),
                           Text(
-                            _currentCard.backText,
+                            _currentCard.answerText,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 20,
-                              color: Colors.indigo.shade700,
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -114,7 +132,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Reveal'),
+                  child: const Text('Reveal Answer'),
                 )
               else
                 Row(

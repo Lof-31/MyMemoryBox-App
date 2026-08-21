@@ -66,99 +66,156 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Flashcard> get _dueCards => _cards.where((c) => c.isDue).toList();
 
-  Widget _buildBoxesView() {
-    final bool canReview = !_hasReviewedToday && _dueCards.isNotEmpty;
+  Future<void> _startReview() async {
+    final result = await Navigator.push<List<Flashcard>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReviewScreen(
+          level: 0,
+          cards: _dueCards,
+        ),
+      ),
+    );
 
-    String buttonLabel;
-    if (_hasReviewedToday) {
-      buttonLabel = 'Daily Review Completed';
-    } else if (_dueCards.isEmpty) {
-      buttonLabel = 'No Cards Due';
-    } else {
-      buttonLabel = 'Start Review (${_dueCards.length})';
+    if (result != null && result.isNotEmpty) {
+      final Map<String, Flashcard> updatedMap = {
+        for (final card in result) card.id: card,
+      };
+      final updatedList = _cards.map((card) {
+        return updatedMap[card.id] ?? card;
+      }).toList();
+
+      await _storageService.saveCards(updatedList);
+      await _storageService.saveLastDailyReviewDate(DateTime.now());
     }
+    _loadData();
+  }
+
+  Future<void> _openCreateCard() async {
+    final newCard = await Navigator.push<Flashcard>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CreateCardScreen(),
+      ),
+    );
+
+    if (newCard != null) {
+      final updatedList = [..._cards, newCard];
+      await _storageService.saveCards(updatedList);
+      _loadData();
+    }
+  }
+
+  // 1. Onglet Daily Review (tout à gauche)
+  Widget _buildDailyReviewView() {
+    final bool canReview = !_hasReviewedToday && _dueCards.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Memory Box'),
+        title: const Text('Daily Review'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ElevatedButton.icon(
-              onPressed: canReview
-                  ? () async {
-                final result = await Navigator.push<List<Flashcard>>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ReviewScreen(
-                      level: 0,
-                      cards: _dueCards,
-                    ),
-                  ),
-                );
-
-                if (result != null && result.isNotEmpty) {
-                  final Map<String, Flashcard> updatedMap = {
-                    for (final card in result) card.id: card,
-                  };
-                  final updatedList = _cards.map((card) {
-                    return updatedMap[card.id] ?? card;
-                  }).toList();
-
-                  await _storageService.saveCards(updatedList);
-                  await _storageService.saveLastDailyReviewDate(DateTime.now());
-                }
-                _loadData();
-              }
-                  : null,
-              icon: Icon(_hasReviewedToday ? Icons.check : Icons.play_arrow),
-              label: Text(buttonLabel),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                textStyle: const TextStyle(
-                  fontSize: 16,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Icon(
+                _hasReviewedToday
+                    ? Icons.check_circle_outline
+                    : (_dueCards.isEmpty ? Icons.done_all : Icons.school_outlined),
+                size: 80,
+                color: _hasReviewedToday
+                    ? Colors.green
+                    : Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                _hasReviewedToday
+                    ? 'All Done for Today!'
+                    : (_dueCards.isEmpty
+                    ? 'No Cards Due'
+                    : '${_dueCards.length} Cards Due for Review'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Memory Boxes',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...List.generate(9, (index) {
-              final levelCards = _cards.where((c) => c.level == index).toList();
-              final dueCount = _hasReviewedToday
-                  ? 0
-                  : levelCards.where((c) => c.isDue).length;
-              return LevelCard(
-                level: index,
-                totalCards: levelCards.length,
-                dueCount: dueCount,
-              );
-            }),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                _hasReviewedToday
+                    ? 'You have already completed your daily session. Come back tomorrow for the next review.'
+                    : (_dueCards.isEmpty
+                    ? 'You have no pending cards to review right now.'
+                    : 'Review these cards to reinforce your memory and promote them to higher boxes.'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 32),
+              FilledButton.icon(
+                onPressed: canReview ? _startReview : null,
+                icon: Icon(_hasReviewedToday ? Icons.check : Icons.play_arrow),
+                label: Text(
+                  _hasReviewedToday
+                      ? 'Daily Review Completed'
+                      : (_dueCards.isEmpty
+                      ? 'No Cards Due'
+                      : 'Start Review (${_dueCards.length})'),
+                ),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final newCard = await Navigator.push<Flashcard>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CreateCardScreen(),
-            ),
-          );
+        heroTag: 'fab_daily_review',
+        onPressed: _openCreateCard,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
 
-          if (newCard != null) {
-            final updatedList = [..._cards, newCard];
-            await _storageService.saveCards(updatedList);
-            _loadData();
-          }
-        },
+  // 2. Onglet My Boxes (2e position)
+  Widget _buildBoxesView() {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Boxes'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            'Memory Boxes',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          ...List.generate(9, (index) {
+            final levelCards = _cards.where((c) => c.level == index).toList();
+            final dueCount =
+            _hasReviewedToday ? 0 : levelCards.where((c) => c.isDue).length;
+            return LevelCard(
+              level: index,
+              totalCards: levelCards.length,
+              dueCount: dueCount,
+            );
+          }),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_boxes_view',
+        onPressed: _openCreateCard,
         child: const Icon(Icons.add),
       ),
     );
@@ -173,6 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final List<Widget> pages = [
+      _buildDailyReviewView(),
       _buildBoxesView(),
       CardListScreen(
         cards: _cards,
@@ -197,6 +255,11 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.play_circle_outline),
+            selectedIcon: Icon(Icons.play_circle),
+            label: 'Daily Review',
+          ),
           NavigationDestination(
             icon: Icon(Icons.all_inbox_outlined),
             selectedIcon: Icon(Icons.all_inbox),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_timezone/flutter_timezone.dart';
 import '../models/flashcard.dart';
 import 'storage_service.dart';
 
@@ -14,6 +16,14 @@ class NotificationService {
   final StorageService _storageService = StorageService();
 
   Future<void> initialize() async {
+    tz.initializeTimeZones();
+    try {
+      final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+    } catch (_) {
+      tz.setLocalLocation(tz.getLocation('UTC'));
+    }
+
     const AndroidInitializationSettings androidSettings =
     AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -30,6 +40,12 @@ class NotificationService {
     );
 
     await _notificationsPlugin.initialize(initSettings);
+
+    final androidImplementation =
+    _notificationsPlugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await androidImplementation?.requestNotificationsPermission();
+    await androidImplementation?.requestExactAlarmsPermission();
   }
 
   Future<void> syncDailyReminder(List<Flashcard> cards, {TimeOfDay? customTime}) async {
@@ -61,8 +77,9 @@ class NotificationService {
       'daily_review_channel',
       'Daily Review Reminders',
       channelDescription: 'Notifications to remind you to review your flashcards',
-      importance: Importance.high,
+      importance: Importance.max,
       priority: Priority.high,
+      showWhen: true,
     );
 
     const NotificationDetails notificationDetails = NotificationDetails(

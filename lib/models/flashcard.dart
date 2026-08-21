@@ -6,16 +6,31 @@ class Flashcard {
   final String backText;
   final int level;
   final DateTime nextReviewDate;
-  final DateTime? lastReviewedAt;
+  final bool isReversed;
 
-  const Flashcard({
+  Flashcard({
     required this.id,
     required this.frontText,
     required this.backText,
-    this.level = 0,
+    required this.level,
     required this.nextReviewDate,
-    this.lastReviewedAt,
+    this.isReversed = false,
   });
+
+  String get promptText => isReversed ? backText : frontText;
+  String get answerText => isReversed ? frontText : backText;
+  int get intervalInDays => pow(2, level).toInt();
+
+  bool get isDue {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final reviewDate = DateTime(
+      nextReviewDate.year,
+      nextReviewDate.month,
+      nextReviewDate.day,
+    );
+    return reviewDate.isBefore(today) || reviewDate.isAtSameMomentAs(today);
+  }
 
   factory Flashcard.create({
     required String id,
@@ -28,51 +43,55 @@ class Flashcard {
       frontText: frontText,
       backText: backText,
       level: 0,
+      isReversed: false,
       nextReviewDate: DateTime(now.year, now.month, now.day).add(const Duration(days: 1)),
     );
   }
 
-  int get intervalInDays => pow(2, level).toInt();
+  Flashcard promote() {
+    final newLevel = level < 8 ? level + 1 : 8;
+    final nextInterval = pow(2, newLevel).toInt();
+    final now = DateTime.now();
+    final nextDate = DateTime(now.year, now.month, now.day).add(Duration(days: nextInterval));
 
-  bool get isDue => DateTime.now().isAfter(nextReviewDate);
-
-  Flashcard promote({int maxLevel = 8}) {
-    final int nextLevel = level < maxLevel ? level + 1 : level;
-    final int interval = pow(2, nextLevel).toInt();
-    final DateTime now = DateTime.now();
-    return copyWith(
-      level: nextLevel,
-      lastReviewedAt: now,
-      nextReviewDate: now.add(Duration(days: interval)),
+    return Flashcard(
+      id: id,
+      frontText: frontText,
+      backText: backText,
+      level: newLevel,
+      isReversed: !isReversed,
+      nextReviewDate: nextDate,
     );
   }
 
   Flashcard demote() {
-    const int resetLevel = 0;
-    final int interval = pow(2, resetLevel).toInt(); // 1 jour
-    final DateTime now = DateTime.now();
-    return copyWith(
-      level: resetLevel,
-      lastReviewedAt: now,
-      nextReviewDate: now.add(Duration(days: interval)),
+    final now = DateTime.now();
+    final nextDate = DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+
+    return Flashcard(
+      id: id,
+      frontText: frontText,
+      backText: backText,
+      level: 0,
+      isReversed: false,
+      nextReviewDate: nextDate,
     );
   }
 
   Flashcard copyWith({
-    String? id,
     String? frontText,
     String? backText,
     int? level,
     DateTime? nextReviewDate,
-    DateTime? lastReviewedAt,
+    bool? isReversed,
   }) {
     return Flashcard(
-      id: id ?? this.id,
+      id: id,
       frontText: frontText ?? this.frontText,
       backText: backText ?? this.backText,
       level: level ?? this.level,
       nextReviewDate: nextReviewDate ?? this.nextReviewDate,
-      lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
+      isReversed: isReversed ?? this.isReversed,
     );
   }
 
@@ -83,7 +102,7 @@ class Flashcard {
       'backText': backText,
       'level': level,
       'nextReviewDate': nextReviewDate.toIso8601String(),
-      'lastReviewedAt': lastReviewedAt?.toIso8601String(),
+      'isReversed': isReversed,
     };
   }
 
@@ -92,11 +111,9 @@ class Flashcard {
       id: map['id'] as String,
       frontText: map['frontText'] as String,
       backText: map['backText'] as String,
-      level: (map['level'] as num?)?.toInt() ?? 0,
+      level: map['level'] as int? ?? 0,
       nextReviewDate: DateTime.parse(map['nextReviewDate'] as String),
-      lastReviewedAt: map['lastReviewedAt'] != null
-          ? DateTime.parse(map['lastReviewedAt'] as String)
-          : null,
+      isReversed: map['isReversed'] as bool? ?? false,
     );
   }
 }
