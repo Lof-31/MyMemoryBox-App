@@ -3,6 +3,7 @@ import '../models/flashcard.dart';
 import '../services/storage_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/level_card.dart';
+import '../widgets/streak_forecast_bar.dart';
 import 'create_card_screen.dart';
 import 'review_screen.dart';
 import 'card_list_screen.dart';
@@ -20,11 +21,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final StorageService _storageService = StorageService();
   final NotificationService _notificationService = NotificationService();
 
   List<Flashcard> _cards = [];
+  List<String> _reviewHistory = [];
+  Map<String, int> _dailyDueHistory = {};
+  int _streak = 0;
   bool _isLoading = true;
   bool _hasReviewedToday = false;
   int _currentNavIndex = 0;
@@ -32,19 +36,66 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadData();
+    }
+  }
+
+  String _formatDate(DateTime d) {
+    return '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   }
 
   Future<void> _loadData() async {
     final cards = await _storageService.loadCards();
     final lastReviewDateStr = await _storageService.getLastDailyReviewDate();
+    final history = await _storageService.getReviewHistory();
+    final streak = await _storageService.getStreak();
+    final dueHistory = await _storageService.getDailyDueHistory();
 
     final DateTime now = DateTime.now();
-    final String todayStr =
-        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final DateTime today = DateTime(now.year, now.month, now.day);
+    final String todayStr = _formatDate(today);
+
+    for (int offset = -4; offset < 0; offset++) {
+      final pastDate = DateTime(today.year, today.month, today.day + offset);
+      final pastDateStr = _formatDate(pastDate);
+
+      final int cumulativeDue = cards.where((c) {
+        final rDate = DateTime(
+          c.nextReviewDate.year,
+          c.nextReviewDate.month,
+          c.nextReviewDate.day,
+        );
+        return rDate.isBefore(pastDate) || rDate.isAtSameMomentAs(pastDate);
+      }).length;
+
+      if (!dueHistory.containsKey(pastDateStr) || dueHistory[pastDateStr] == 0) {
+        dueHistory[pastDateStr] = cumulativeDue;
+      }
+    }
+
+    final int todayDue = cards.where((c) => c.isDue).length;
+    dueHistory[todayStr] = todayDue;
+
+    await _storageService.saveDailyDueHistory(dueHistory);
 
     setState(() {
       _cards = cards;
+      _reviewHistory = history;
+      _dailyDueHistory = dueHistory;
+      _streak = streak;
       _hasReviewedToday = (lastReviewDateStr == todayStr);
       _isLoading = false;
     });
@@ -87,6 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       await _storageService.saveCards(updatedList);
       await _storageService.saveLastDailyReviewDate(DateTime.now());
+      await _storageService.incrementStreak(DateTime.now());
     }
     _loadData();
   }
@@ -106,7 +158,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // 1. Onglet Daily Review (tout à gauche)
   Widget _buildDailyReviewView() {
     final bool canReview = !_hasReviewedToday && _dueCards.isNotEmpty;
 
@@ -114,70 +165,86 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Daily Review'),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Icon(
-                _hasReviewedToday
-                    ? Icons.check_circle_outline
-                    : (_dueCards.isEmpty ? Icons.done_all : Icons.school_outlined),
-                size: 80,
-                color: _hasReviewedToday
-                    ? Colors.green
-                    : Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                _hasReviewedToday
-                    ? 'All Done for Today!'
-                    : (_dueCards.isEmpty
-                    ? 'No Cards Due'
-                    : '${_dueCards.length} Cards Due for Review'),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _hasReviewedToday
-                    ? 'You have already completed your daily session. Come back tomorrow for the next review.'
-                    : (_dueCards.isEmpty
-                    ? 'You have no pending cards to review right now.'
-                    : 'Review these cards to reinforce your memory and promote them to higher boxes.'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 32),
-              FilledButton.icon(
-                onPressed: canReview ? _startReview : null,
-                icon: Icon(_hasReviewedToday ? Icons.check : Icons.play_arrow),
-                label: Text(
-                  _hasReviewedToday
-                      ? 'Daily Review Completed'
-                      : (_dueCards.isEmpty
-                      ? 'No Cards Due'
-                      : 'Start Review (${_dueCards.length})'),
-                ),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+      body: Column(
+        children: [
+          StreakForecastBar(
+            cards: _cards,
+            reviewHistory: _reviewHistory,
+            dailyDueHistory: _dailyDueHistory,
+            hasReviewedToday: _hasReviewedToday,
+            streak: _streak,
           ),
-        ),
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Icon(
+                      _hasReviewedToday
+                          ? Icons.check_circle_outline
+                          : (_dueCards.isEmpty
+                          ? Icons.done_all
+                          : Icons.school_outlined),
+                      size: 72,
+                      color: _hasReviewedToday
+                          ? Colors.green
+                          : Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      _hasReviewedToday
+                          ? 'All Done for Today!'
+                          : (_dueCards.isEmpty
+                          ? 'No Cards Due'
+                          : '${_dueCards.length} Cards Due for Review'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _hasReviewedToday
+                          ? 'You have completed your daily session. Come back tomorrow for the next review.'
+                          : (_dueCards.isEmpty
+                          ? 'You have no pending cards to review right now.'
+                          : 'Review these cards to reinforce your memory and promote them to higher boxes.'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    FilledButton.icon(
+                      onPressed: canReview ? _startReview : null,
+                      icon: Icon(
+                          _hasReviewedToday ? Icons.check : Icons.play_arrow),
+                      label: Text(
+                        _hasReviewedToday
+                            ? 'Daily Review Completed'
+                            : (_dueCards.isEmpty
+                            ? 'No Cards Due'
+                            : 'Start Review (${_dueCards.length})'),
+                      ),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'fab_daily_review',
@@ -187,7 +254,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 2. Onglet My Boxes (2e position)
   Widget _buildBoxesView() {
     return Scaffold(
       appBar: AppBar(
@@ -202,9 +268,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 12),
           ...List.generate(9, (index) {
-            final levelCards = _cards.where((c) => c.level == index).toList();
-            final dueCount =
-            _hasReviewedToday ? 0 : levelCards.where((c) => c.isDue).length;
+            final levelCards =
+            _cards.where((c) => c.level == index).toList();
+            final dueCount = _hasReviewedToday
+                ? 0
+                : levelCards.where((c) => c.isDue).length;
             return LevelCard(
               level: index,
               totalCards: levelCards.length,
