@@ -5,6 +5,7 @@ class StreakForecastBar extends StatelessWidget {
   final List<Flashcard> cards;
   final List<String> reviewHistory;
   final Map<String, int> dailyDueHistory;
+  final Map<String, int> dailyReviewedCountHistory;
   final bool hasReviewedToday;
   final int streak;
 
@@ -13,6 +14,7 @@ class StreakForecastBar extends StatelessWidget {
     required this.cards,
     required this.reviewHistory,
     required this.dailyDueHistory,
+    required this.dailyReviewedCountHistory,
     required this.hasReviewedToday,
     required this.streak,
   });
@@ -108,21 +110,25 @@ class StreakForecastBar extends StatelessWidget {
                 if (isPast) {
                   final bool wasReviewed = reviewHistory.contains(dateStr);
                   final int recordedDue = dailyDueHistory[dateStr] ?? 0;
+                  final int reviewedCount = dailyReviewedCountHistory[dateStr] ?? 0;
 
                   if (wasReviewed || recordedDue == 0) {
                     dotColor = Colors.green.shade600;
-                    count = 0;
+                    count = reviewedCount;
                   } else {
                     dotColor = Colors.red.shade500;
                     count = recordedDue;
                   }
                 } else if (isToday) {
-                  count = cards.where((c) => c.isDue).length;
-                  if (hasReviewedToday || count == 0) {
+                  final int dueToday = cards.where((c) => c.isDue).length;
+                  final int reviewedToday = dailyReviewedCountHistory[dateStr] ?? 0;
+
+                  if (hasReviewedToday || dueToday == 0) {
                     dotColor = Colors.green.shade600;
-                    count = 0;
+                    count = reviewedToday;
                   } else {
                     dotColor = Colors.grey.shade400;
+                    count = dueToday;
                   }
                 } else {
                   count = _countDueForFutureDate(targetDate);

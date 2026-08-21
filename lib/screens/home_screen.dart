@@ -28,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<Flashcard> _cards = [];
   List<String> _reviewHistory = [];
   Map<String, int> _dailyDueHistory = {};
+  Map<String, int> _dailyReviewedCountHistory = {};
   int _streak = 0;
   bool _isLoading = true;
   bool _hasReviewedToday = false;
@@ -63,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final history = await _storageService.getReviewHistory();
     final streak = await _storageService.getStreak();
     final dueHistory = await _storageService.getDailyDueHistory();
+    final reviewedCountHistory = await _storageService.getDailyReviewedCountHistory();
 
     final DateTime now = DateTime.now();
     final DateTime today = DateTime(now.year, now.month, now.day);
@@ -95,6 +97,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _cards = cards;
       _reviewHistory = history;
       _dailyDueHistory = dueHistory;
+      _dailyReviewedCountHistory = reviewedCountHistory;
       _streak = streak;
       _hasReviewedToday = (lastReviewDateStr == todayStr);
       _isLoading = false;
@@ -118,6 +121,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<Flashcard> get _dueCards => _cards.where((c) => c.isDue).toList();
 
   Future<void> _startReview() async {
+    final int sessionCardCount = _dueCards.length;
     final result = await Navigator.push<List<Flashcard>>(
       context,
       MaterialPageRoute(
@@ -138,6 +142,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       await _storageService.saveCards(updatedList);
       await _storageService.saveLastDailyReviewDate(DateTime.now());
+      await _storageService.saveDailyReviewedCount(DateTime.now(), sessionCardCount);
       await _storageService.incrementStreak(DateTime.now());
     }
     _loadData();
@@ -171,6 +176,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             cards: _cards,
             reviewHistory: _reviewHistory,
             dailyDueHistory: _dailyDueHistory,
+            dailyReviewedCountHistory: _dailyReviewedCountHistory,
             hasReviewedToday: _hasReviewedToday,
             streak: _streak,
           ),
