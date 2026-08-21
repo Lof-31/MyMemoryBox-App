@@ -313,6 +313,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       SettingsScreen(
         onThemeChanged: widget.onThemeChanged,
+        onDataReset: _loadData,
       ),
     ];
 

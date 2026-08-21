@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import '../main.dart';
 import '../services/storage_service.dart';
 import '../services/notification_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(int index)? onThemeChanged;
+  final VoidCallback? onDataReset;
 
   const SettingsScreen({
     super.key,
     this.onThemeChanged,
+    this.onDataReset,
   });
 
   @override
@@ -23,6 +24,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _selectedColorIndex = 0;
   bool _isLoading = true;
 
+  final List<Color> _colorPalette = [
+    Colors.indigo,
+    Colors.teal,
+    Colors.deepPurple,
+    Colors.blueGrey,
+    Colors.amber.shade800,
+    Colors.pink,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -31,24 +41,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final time = await _storageService.getReminderTime();
-    final colorIdx = await _storageService.getThemeColorIndex();
+    final colorIndex = await _storageService.getThemeColorIndex();
     setState(() {
       _reminderTime = time;
-      _selectedColorIndex = (colorIdx >= 0 && colorIdx < appThemeColors.length) ? colorIdx : 0;
+      _selectedColorIndex = colorIndex;
       _isLoading = false;
     });
   }
 
-  Future<void> _changeThemeColor(int index) async {
-    setState(() {
-      _selectedColorIndex = index;
-    });
-    await _storageService.saveThemeColorIndex(index);
-    widget.onThemeChanged?.call(index);
-  }
-
   Future<void> _selectTime() async {
-    final TimeOfDay? picked = await showTimePicker(
+    final picked = await showTimePicker(
       context: context,
       initialTime: _reminderTime,
     );
@@ -57,17 +59,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _reminderTime = picked;
       });
-
       await _storageService.saveReminderTime(picked);
       final cards = await _storageService.loadCards();
-      await _notificationService.syncDailyReminder(cards, customTime: picked);
+      await _notificationService.syncDailyReminder(cards);
+    }
+  }
 
+  Future<void> _changeTheme(int index) async {
+    setState(() {
+      _selectedColorIndex = index;
+    });
+    await _storageService.saveThemeColorIndex(index);
+    if (widget.onThemeChanged != null) {
+      widget.onThemeChanged!(index);
+    }
+  }
+
+  Future<void> _confirmResetData() async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          title: const Text('Reset All Data?'),
+          content: const Text(
+            'This will permanently delete all flashcards, review histories, settings, and streak progress. This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Reset Everything'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _storageService.clearAllData();
+      await _notificationService.cancelAllNotifications();
+      await _loadSettings();
+      if (widget.onDataReset != null) {
+        widget.onDataReset!();
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Reminder time set to ${picked.format(context)}'),
-            duration: const Duration(seconds: 2),
-          ),
+          const SnackBar(content: Text('All data has been wiped.')),
         );
       }
     }
@@ -75,15 +118,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
+      body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
@@ -106,49 +153,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Theme Color',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    'Theme Accent Color',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Select your favorite primary accent color',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: List.generate(appThemeColors.length, (index) {
-                      final color = appThemeColors[index];
+                    children: List.generate(_colorPalette.length, (index) {
+                      final color = _colorPalette[index];
                       final isSelected = _selectedColorIndex == index;
-
                       return GestureDetector(
-                        onTap: () => _changeThemeColor(index),
+                        onTap: () => _changeTheme(index),
                         child: Container(
-                          width: 44,
-                          height: 44,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             color: color,
                             shape: BoxShape.circle,
                             border: isSelected
-                                ? Border.all(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              width: 3,
-                            )
+                                ? Border.all(color: Colors.black, width: 3)
                                 : null,
-                            boxShadow: [
-                              BoxShadow(
-                                color: color.withValues(alpha: 0.4),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
                           ),
                           child: isSelected
-                              ? const Icon(
-                            Icons.check,
-                            color: Colors.white,
-                            size: 24,
-                          )
+                              ? const Icon(Icons.check, size: 20, color: Colors.white)
                               : null,
                         ),
                       );
@@ -188,11 +215,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'About',
+            'Danger Zone',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: primaryColor,
+              color: Colors.red.shade700,
             ),
           ),
           const SizedBox(height: 8),
@@ -202,9 +229,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: ListTile(
-              leading: Icon(Icons.info_outline, color: primaryColor),
-              title: const Text('My Memory Box'),
-              subtitle: const Text('Version 1.0.0 • Spaced Repetition System'),
+              leading: Icon(Icons.delete_forever_outlined, color: Colors.red.shade700),
+              title: const Text(
+                'Delete All Data',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text('Reset flashcards, streak and preferences'),
+              trailing: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red.shade700,
+                ),
+                onPressed: _confirmResetData,
+                child: const Text('Reset'),
+              ),
             ),
           ),
         ],

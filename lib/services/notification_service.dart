@@ -48,6 +48,10 @@ class NotificationService {
     await androidImplementation?.requestExactAlarmsPermission();
   }
 
+  Future<void> cancelAllNotifications() async {
+    await _notificationsPlugin.cancelAll();
+  }
+
   Future<void> syncDailyReminder(List<Flashcard> cards, {TimeOfDay? customTime}) async {
     final bool hasDueCards = cards.any((c) => c.isDue);
 
