@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../main.dart';
 import '../services/storage_service.dart';
 import '../services/notification_service.dart';
 
@@ -24,15 +25,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _selectedColorIndex = 0;
   bool _isLoading = true;
 
-  final List<Color> _colorPalette = [
-    Colors.indigo,
-    Colors.teal,
-    Colors.deepPurple,
-    Colors.blueGrey,
-    Colors.amber.shade800,
-    Colors.pink,
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -44,7 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final colorIndex = await _storageService.getThemeColorIndex();
     setState(() {
       _reminderTime = time;
-      _selectedColorIndex = colorIndex;
+      _selectedColorIndex = (colorIndex < appThemeColors.length) ? colorIndex : 0;
       _isLoading = false;
     });
   }
@@ -158,10 +150,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 12),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: List.generate(_colorPalette.length, (index) {
-                      final color = _colorPalette[index];
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(appThemeColors.length, (index) {
+                      final color = appThemeColors[index];
                       final isSelected = _selectedColorIndex == index;
+                      final bool isLightColor = color == Colors.yellow;
+
                       return GestureDetector(
                         onTap: () => _changeTheme(index),
                         child: Container(
@@ -171,11 +165,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             color: color,
                             shape: BoxShape.circle,
                             border: isSelected
-                                ? Border.all(color: Colors.black, width: 3)
-                                : null,
+                                ? Border.all(color: Colors.black87, width: 3)
+                                : Border.all(color: Colors.grey.shade300, width: 1),
                           ),
                           child: isSelected
-                              ? const Icon(Icons.check, size: 20, color: Colors.white)
+                              ? Icon(
+                            Icons.check,
+                            size: 18,
+                            color: isLightColor ? Colors.black87 : Colors.white,
+                          )
                               : null,
                         ),
                       );

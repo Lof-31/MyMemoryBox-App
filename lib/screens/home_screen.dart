@@ -252,11 +252,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'fab_daily_review',
-        onPressed: _openCreateCard,
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
@@ -287,11 +282,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           }),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'fab_boxes_view',
-        onPressed: _openCreateCard,
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
@@ -317,10 +307,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
     ];
 
+    final bool isSettingsTab = _currentNavIndex == 3;
+
     return Scaffold(
       body: IndexedStack(
         index: _currentNavIndex,
         children: pages,
+      ),
+      floatingActionButton: isSettingsTab
+          ? null
+          : FloatingActionButton.extended(
+        heroTag: 'fab_main_new_card',
+        onPressed: _openCreateCard,
+        icon: const Icon(Icons.add),
+        label: const Text(
+          'New Card',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentNavIndex,

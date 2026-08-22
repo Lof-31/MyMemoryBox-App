@@ -5,7 +5,6 @@ import 'services/storage_service.dart';
 
 const List<Color> appThemeColors = [
   Colors.deepPurple,
-  Colors.indigo,
   Colors.blue,
   Colors.green,
   Colors.yellow,
