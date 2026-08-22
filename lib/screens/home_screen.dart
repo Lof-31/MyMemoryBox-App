@@ -260,27 +260,55 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       appBar: AppBar(
         title: const Text('My Boxes'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text(
-            'Memory Boxes',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Memory Boxes',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Column(
+                  children: List.generate(3, (rowIndex) {
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: rowIndex < 2 ? 8 : 0),
+                        child: Row(
+                          children: List.generate(3, (colIndex) {
+                            final int index = rowIndex * 3 + colIndex;
+                            final levelCards =
+                            _cards.where((c) => c.level == index).toList();
+                            final dueCount = _hasReviewedToday
+                                ? 0
+                                : levelCards.where((c) => c.isDue).length;
+
+                            return Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  right: colIndex < 2 ? 8 : 0,
+                                ),
+                                child: LevelCard(
+                                  level: index,
+                                  totalCards: levelCards.length,
+                                  dueCount: dueCount,
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(height: 80),
+            ],
           ),
-          const SizedBox(height: 12),
-          ...List.generate(9, (index) {
-            final levelCards =
-            _cards.where((c) => c.level == index).toList();
-            final dueCount = _hasReviewedToday
-                ? 0
-                : levelCards.where((c) => c.isDue).length;
-            return LevelCard(
-              level: index,
-              totalCards: levelCards.length,
-              dueCount: dueCount,
-            );
-          }),
-        ],
+        ),
       ),
     );
   }
