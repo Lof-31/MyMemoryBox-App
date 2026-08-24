@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/storage_service.dart';
@@ -36,25 +39,100 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final colorIndex = await _storageService.getThemeColorIndex();
     setState(() {
       _reminderTime = time;
-      _selectedColorIndex = (colorIndex < appThemeColors.length) ? colorIndex : 0;
+      _selectedColorIndex =
+      (colorIndex < appThemeColors.length) ? colorIndex : 0;
       _isLoading = false;
     });
   }
 
+  bool get _isApplePlatform {
+    if (kIsWeb) return false;
+    return Platform.isIOS || Platform.isMacOS;
+  }
+
   Future<void> _selectTime() async {
+    if (_isApplePlatform) {
+      await _showCupertinoTimePicker();
+    } else {
+      await _showMaterialTimePicker();
+    }
+  }
+
+  Future<void> _showMaterialTimePicker() async {
     final picked = await showTimePicker(
       context: context,
       initialTime: _reminderTime,
     );
 
     if (picked != null && picked != _reminderTime) {
-      setState(() {
-        _reminderTime = picked;
-      });
-      await _storageService.saveReminderTime(picked);
-      final cards = await _storageService.loadCards();
-      await _notificationService.syncDailyReminder(cards);
+      await _updateReminderTime(picked);
     }
+  }
+
+  Future<void> _showCupertinoTimePicker() async {
+    final initialDuration = Duration(
+      hours: _reminderTime.hour,
+      minutes: _reminderTime.minute,
+    );
+    Duration tempDuration = initialDuration;
+
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext ctx) {
+        return Container(
+          height: 280,
+          color: CupertinoColors.systemBackground.resolveFrom(ctx),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Annuler'),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                    CupertinoButton(
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        final int hours = tempDuration.inHours % 24;
+                        final int minutes = tempDuration.inMinutes % 60;
+                        _updateReminderTime(
+                          TimeOfDay(hour: hours, minute: minutes),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoTimerPicker(
+                    mode: CupertinoTimerPickerMode.hm,
+                    initialTimerDuration: initialDuration,
+                    onTimerDurationChanged: (Duration newDuration) {
+                      tempDuration = newDuration;
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _updateReminderTime(TimeOfDay newTime) async {
+    setState(() {
+      _reminderTime = newTime;
+    });
+    await _storageService.saveReminderTime(newTime);
+    final cards = await _storageService.loadCards();
+    await _notificationService.syncDailyReminder(cards);
   }
 
   Future<void> _changeTheme(int index) async {
@@ -68,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _confirmResetData() async {
-    final bool? confirmed = await showDialog<bool>(
+    final bool? isConfirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext ctx) {
         return AlertDialog(
@@ -93,7 +171,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
     );
 
-    if (confirmed == true) {
+    if (isConfirmed == true) {
       await _storageService.clearAllData();
       await _notificationService.cancelAllNotifications();
       await _loadSettings();
@@ -166,13 +244,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             shape: BoxShape.circle,
                             border: isSelected
                                 ? Border.all(color: Colors.black87, width: 3)
-                                : Border.all(color: Colors.grey.shade300, width: 1),
+                                : Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1,
+                            ),
                           ),
                           child: isSelected
                               ? Icon(
                             Icons.check,
                             size: 18,
-                            color: isLightColor ? Colors.black87 : Colors.white,
+                            color: isLightColor
+                                ? Colors.black87
+                                : Colors.white,
                           )
                               : null,
                         ),
@@ -227,7 +310,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: ListTile(
-              leading: Icon(Icons.delete_forever_outlined, color: Colors.red.shade700),
+              leading: Icon(
+                Icons.delete_forever_outlined,
+                color: Colors.red.shade700,
+              ),
               title: const Text(
                 'Delete All Data',
                 style: TextStyle(fontWeight: FontWeight.bold),

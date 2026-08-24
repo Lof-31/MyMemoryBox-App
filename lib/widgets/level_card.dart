@@ -7,11 +7,11 @@ class LevelCard extends StatelessWidget {
   final int dueCount;
   final VoidCallback? onTap;
 
-  static const double boxTitleFontSize = 16.0;
-  static const double intervalFontSize = 14.0;
-  static const double cardCountFontSize = 15.0;
-  static const double dueBadgeFontSize = 14.0;
-  static const double levelAvatarFontSize = 14.0;
+  static const double boxTitleFontSize = 16;
+  static const double intervalFontSize = 14;
+  static const double cardCountFontSize = 16;
+  static const double dueBadgeFontSize = 14;
+  static const double levelAvatarFontSize = 14;
 
   const LevelCard({
     super.key,
