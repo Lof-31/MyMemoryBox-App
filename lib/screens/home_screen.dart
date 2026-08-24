@@ -7,6 +7,7 @@ import '../widgets/streak_forecast_bar.dart';
 import 'create_card_screen.dart';
 import 'review_screen.dart';
 import 'card_list_screen.dart';
+import 'box_detail_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -255,6 +256,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+
   Widget _buildBoxesView() {
     return Scaffold(
       appBar: AppBar(
@@ -295,6 +297,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   level: index,
                                   totalCards: levelCards.length,
                                   dueCount: dueCount,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => BoxDetailScreen(
+                                          level: index,
+                                          cards: _cards,
+                                          onDelete: _deleteCard,
+                                          onEdit: _editCard,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                             );
