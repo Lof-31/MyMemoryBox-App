@@ -48,10 +48,15 @@ class BoxDetailScreen extends StatelessWidget {
           ],
         ),
       )
-          : ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          : GridView.builder(
+        padding: const EdgeInsets.all(12),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 0.70,
+        ),
         itemCount: boxCards.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           return FlashcardTile(
             card: boxCards[index],

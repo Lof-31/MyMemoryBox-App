@@ -6,6 +6,8 @@ class FlashcardTile extends StatelessWidget {
   final Function(String id) onDelete;
   final Function(Flashcard card) onEdit;
 
+  static const double cardFontSize = 14.0;
+
   const FlashcardTile({
     super.key,
     required this.card,
@@ -87,76 +89,129 @@ class FlashcardTile extends StatelessWidget {
     );
   }
 
+  void _showActionModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Edit Card'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showEditDialog(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text('Delete Card', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _confirmDelete(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final nextDate = card.nextReviewDate;
-    final dateFormatted =
-        '${nextDate.year}-${nextDate.month.toString().padLeft(2, '0')}-${nextDate.day.toString().padLeft(2, '0')}';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final reviewDate = DateTime(
+      card.nextReviewDate.year,
+      card.nextReviewDate.month,
+      card.nextReviewDate.day,
+    );
+    final int daysLeft = reviewDate.difference(today).inDays;
+
+    final bool isDue = daysLeft <= 0;
+    final String dueLabel = isDue ? 'Due' : 'in ${daysLeft}d';
+    final Color dueColor = isDue ? Colors.orange.shade800 : Colors.grey.shade600;
 
     return Card(
-      elevation: 2,
+      elevation: 1.5,
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: ExpansionTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.indigo,
-          foregroundColor: Colors.white,
-          child: Text('${card.level}'),
-        ),
-        title: Text(
-          card.frontText,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          'Interval: ${card.intervalInDays}d • Next: $dateFormatted',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Answer / Translation:',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.indigo,
+      child: InkWell(
+        onTap: () => _showActionModal(context),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CircleAvatar(
+                    radius: 15,
+                    backgroundColor: Colors.indigo,
+                    foregroundColor: Colors.white,
+                    child: Text(
+                      '${card.level}',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    dueLabel,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isDue ? FontWeight.bold : FontWeight.w600,
+                      color: dueColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    card.frontText,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: cardFontSize,
+                      height: 1.15,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  card.backText,
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IconButton.outlined(
-                      icon: const Icon(Icons.edit, size: 20),
-                      onPressed: () => _showEditDialog(context),
-                      tooltip: 'Edit Card',
+              ),
+              Divider(height: 6, thickness: 0.8, color: Colors.grey.shade300),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    card.backText,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: cardFontSize,
+                      height: 1.15,
+                      color: Colors.grey.shade700,
                     ),
-                    const SizedBox(width: 8),
-                    IconButton.outlined(
-                      icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-                      onPressed: () => _confirmDelete(context),
-                      tooltip: 'Delete Card',
-                    ),
-                  ],
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

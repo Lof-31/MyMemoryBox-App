@@ -42,7 +42,7 @@ class _CardListScreenState extends State<CardListScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: TextField(
               decoration: const InputDecoration(
                 hintText: 'Search cards...',
@@ -69,11 +69,16 @@ class _CardListScreenState extends State<CardListScreen> {
                 style: TextStyle(color: Colors.grey.shade600),
               ),
             )
-                : ListView.separated(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                : GridView.builder(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
+              gridDelegate:
+              const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 0.70,
+              ),
               itemCount: _filteredCards.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 return FlashcardTile(
                   card: _filteredCards[index],
