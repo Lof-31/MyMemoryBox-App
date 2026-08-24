@@ -1,6 +1,3 @@
-import 'dart:io' show Platform;
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/storage_service.dart';
@@ -45,94 +42,128 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  bool get _isApplePlatform {
-    if (kIsWeb) return false;
-    return Platform.isIOS || Platform.isMacOS;
-  }
-
   Future<void> _selectTime() async {
-    if (_isApplePlatform) {
-      await _showCupertinoTimePicker();
-    } else {
-      await _showMaterialTimePicker();
-    }
-  }
+    int selectedHour = _reminderTime.hour;
+    int selectedMinuteIndex = (_reminderTime.minute / 5).round() % 12;
 
-  Future<void> _showMaterialTimePicker() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _reminderTime,
-    );
+    final FixedExtentScrollController hourController =
+    FixedExtentScrollController(initialItem: selectedHour);
+    final FixedExtentScrollController minuteController =
+    FixedExtentScrollController(initialItem: selectedMinuteIndex);
 
-    if (picked != null && picked != _reminderTime) {
-      await _updateReminderTime(picked);
-    }
-  }
-
-  Future<void> _showCupertinoTimePicker() async {
-    final initialDuration = Duration(
-      hours: _reminderTime.hour,
-      minutes: _reminderTime.minute,
-    );
-    Duration tempDuration = initialDuration;
-
-    await showCupertinoModalPopup<void>(
+    final TimeOfDay? picked = await showDialog<TimeOfDay>(
       context: context,
       builder: (BuildContext ctx) {
-        return Container(
-          height: 280,
-          color: CupertinoColors.systemBackground.resolveFrom(ctx),
-          child: SafeArea(
-            top: false,
-            child: Column(
+        final colorScheme = Theme.of(ctx).colorScheme;
+
+        return AlertDialog(
+          title: const Center(
+            child: Text(
+              'Set Reminder Time',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ),
+          content: SizedBox(
+            height: 180,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CupertinoButton(
-                      child: const Text('Annuler'),
-                      onPressed: () => Navigator.of(ctx).pop(),
-                    ),
-                    CupertinoButton(
-                      child: const Text(
-                        'OK',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                        final int hours = tempDuration.inHours % 24;
-                        final int minutes = tempDuration.inMinutes % 60;
-                        _updateReminderTime(
-                          TimeOfDay(hour: hours, minute: minutes),
+                SizedBox(
+                  width: 65,
+                  child: ListWheelScrollView.useDelegate(
+                    controller: hourController,
+                    itemExtent: 44,
+                    physics: const FixedExtentScrollPhysics(),
+                    perspective: 0.005,
+                    diameterRatio: 1.2,
+                    onSelectedItemChanged: (index) {
+                      selectedHour = index;
+                    },
+                    childDelegate: ListWheelChildBuilderDelegate(
+                      childCount: 24,
+                      builder: (context, index) {
+                        return Center(
+                          child: Text(
+                            index.toString().padLeft(2, '0'),
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
+                            ),
+                          ),
                         );
                       },
                     ),
-                  ],
+                  ),
                 ),
-                Expanded(
-                  child: CupertinoTimerPicker(
-                    mode: CupertinoTimerPickerMode.hm,
-                    initialTimerDuration: initialDuration,
-                    onTimerDurationChanged: (Duration newDuration) {
-                      tempDuration = newDuration;
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    ':',
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                SizedBox(
+                  width: 65,
+                  child: ListWheelScrollView.useDelegate(
+                    controller: minuteController,
+                    itemExtent: 44,
+                    physics: const FixedExtentScrollPhysics(),
+                    perspective: 0.005,
+                    diameterRatio: 1.2,
+                    onSelectedItemChanged: (index) {
+                      selectedMinuteIndex = index;
                     },
+                    childDelegate: ListWheelChildBuilderDelegate(
+                      childCount: 12,
+                      builder: (context, index) {
+                        final int minuteValue = index * 5;
+                        return Center(
+                          child: Text(
+                            minuteValue.toString().padLeft(2, '0'),
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop(
+                  TimeOfDay(
+                    hour: selectedHour,
+                    minute: selectedMinuteIndex * 5,
+                  ),
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
         );
       },
     );
-  }
 
-  Future<void> _updateReminderTime(TimeOfDay newTime) async {
-    setState(() {
-      _reminderTime = newTime;
-    });
-    await _storageService.saveReminderTime(newTime);
-    final cards = await _storageService.loadCards();
-    await _notificationService.syncDailyReminder(cards);
+    if (picked != null && picked != _reminderTime) {
+      setState(() {
+        _reminderTime = picked;
+      });
+      await _storageService.saveReminderTime(picked);
+      final cards = await _storageService.loadCards();
+      await _notificationService.syncDailyReminder(cards);
+    }
   }
 
   Future<void> _changeTheme(int index) async {
