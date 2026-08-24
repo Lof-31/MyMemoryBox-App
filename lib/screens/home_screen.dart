@@ -65,7 +65,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final history = await _storageService.getReviewHistory();
     final streak = await _storageService.getStreak();
     final dueHistory = await _storageService.getDailyDueHistory();
-    final reviewedCountHistory = await _storageService.getDailyReviewedCountHistory();
+    final reviewedCountHistory =
+    await _storageService.getDailyReviewedCountHistory();
 
     final DateTime now = DateTime.now();
     final DateTime today = DateTime(now.year, now.month, now.day);
@@ -84,7 +85,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return rDate.isBefore(pastDate) || rDate.isAtSameMomentAs(pastDate);
       }).length;
 
-      if (!dueHistory.containsKey(pastDateStr) || dueHistory[pastDateStr] == 0) {
+      if (!dueHistory.containsKey(pastDateStr) ||
+          dueHistory[pastDateStr] == 0) {
         dueHistory[pastDateStr] = cumulativeDue;
       }
     }
@@ -143,7 +145,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       await _storageService.saveCards(updatedList);
       await _storageService.saveLastDailyReviewDate(DateTime.now());
-      await _storageService.saveDailyReviewedCount(DateTime.now(), sessionCardCount);
+      await _storageService.saveDailyReviewedCount(
+          DateTime.now(), sessionCardCount);
       await _storageService.incrementStreak(DateTime.now());
     }
     _loadData();
@@ -256,7 +259,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-
   Widget _buildBoxesView() {
     return Scaffold(
       appBar: AppBar(
@@ -264,63 +266,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Memory Boxes',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
               Expanded(
                 child: Column(
-                  children: List.generate(3, (rowIndex) {
+                  children: List.generate(9, (index) {
+                    final levelCards =
+                    _cards.where((c) => c.level == index).toList();
+                    final dueCount = _hasReviewedToday
+                        ? 0
+                        : levelCards.where((c) => c.isDue).length;
+
                     return Expanded(
                       child: Padding(
-                        padding: EdgeInsets.only(bottom: rowIndex < 2 ? 8 : 0),
-                        child: Row(
-                          children: List.generate(3, (colIndex) {
-                            final int index = rowIndex * 3 + colIndex;
-                            final levelCards =
-                            _cards.where((c) => c.level == index).toList();
-                            final dueCount = _hasReviewedToday
-                                ? 0
-                                : levelCards.where((c) => c.isDue).length;
-
-                            return Expanded(
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  right: colIndex < 2 ? 8 : 0,
-                                ),
-                                child: LevelCard(
+                        padding: EdgeInsets.only(bottom: index < 8 ? 6 : 0),
+                        child: LevelCard(
+                          level: index,
+                          totalCards: levelCards.length,
+                          dueCount: dueCount,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => BoxDetailScreen(
                                   level: index,
-                                  totalCards: levelCards.length,
-                                  dueCount: dueCount,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => BoxDetailScreen(
-                                          level: index,
-                                          cards: _cards,
-                                          onDelete: _deleteCard,
-                                          onEdit: _editCard,
-                                        ),
-                                      ),
-                                    );
-                                  },
+                                  cards: _cards,
+                                  onDelete: _deleteCard,
+                                  onEdit: _editCard,
                                 ),
                               ),
                             );
-                          }),
+                          },
                         ),
                       ),
                     );
                   }),
                 ),
               ),
-              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -338,28 +322,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     final List<Widget> pages = [
       _buildDailyReviewView(),
-      _buildBoxesView(),
       CardListScreen(
         cards: _cards,
         onDelete: _deleteCard,
         onEdit: _editCard,
       ),
+      _buildBoxesView(),
       SettingsScreen(
         onThemeChanged: widget.onThemeChanged,
         onDataReset: _loadData,
       ),
     ];
 
-    final bool isSettingsTab = _currentNavIndex == 3;
+    final bool shouldShowFab = _currentNavIndex == 0 || _currentNavIndex == 1;
 
     return Scaffold(
       body: IndexedStack(
         index: _currentNavIndex,
         children: pages,
       ),
-      floatingActionButton: isSettingsTab
-          ? null
-          : FloatingActionButton.extended(
+      floatingActionButton: shouldShowFab
+          ? FloatingActionButton.extended(
         heroTag: 'fab_main_new_card',
         onPressed: _openCreateCard,
         icon: const Icon(Icons.add),
@@ -367,7 +350,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           'New Card',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-      ),
+      )
+          : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentNavIndex,
         onDestinationSelected: (int index) {
@@ -382,14 +366,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             label: 'Daily Review',
           ),
           NavigationDestination(
-            icon: Icon(Icons.all_inbox_outlined),
-            selectedIcon: Icon(Icons.all_inbox),
-            label: 'My Boxes',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.style_outlined),
             selectedIcon: Icon(Icons.style),
             label: 'My Cards',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.all_inbox_outlined),
+            selectedIcon: Icon(Icons.all_inbox),
+            label: 'My Boxes',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

@@ -65,7 +65,7 @@ class StreakForecastBar extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Activity & Forecast',
+                  'Activity',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
