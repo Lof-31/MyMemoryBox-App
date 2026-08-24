@@ -133,7 +133,7 @@ class FlashcardTile extends StatelessWidget {
     final int daysLeft = reviewDate.difference(today).inDays;
 
     final bool isDue = daysLeft <= 0;
-    final String dueLabel = isDue ? 'Due' : 'in ${daysLeft}d';
+    final String dueLabel = isDue ? 'Today' : 'in ${daysLeft}d';
     final Color dueColor = isDue ? Colors.orange.shade800 : Colors.grey.shade600;
 
     return Card(

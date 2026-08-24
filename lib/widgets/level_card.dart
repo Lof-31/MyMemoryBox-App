@@ -7,6 +7,12 @@ class LevelCard extends StatelessWidget {
   final int dueCount;
   final VoidCallback? onTap;
 
+  static const double boxTitleFontSize = 16.0;
+  static const double intervalFontSize = 14.0;
+  static const double cardCountFontSize = 15.0;
+  static const double dueBadgeFontSize = 14.0;
+  static const double levelAvatarFontSize = 14.0;
+
   const LevelCard({
     super.key,
     required this.level,
@@ -30,17 +36,17 @@ class LevelCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Row(
             children: [
               CircleAvatar(
-                radius: 14,
+                radius: 15,
                 backgroundColor: hasDue ? Colors.orange : Colors.indigo,
                 foregroundColor: Colors.white,
                 child: Text(
                   '$level',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: levelAvatarFontSize,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -53,15 +59,16 @@ class LevelCard extends StatelessWidget {
                       'Box $level',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: boxTitleFontSize,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '(${intervalDays}d)',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: intervalFontSize,
                         color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -70,14 +77,14 @@ class LevelCard extends StatelessWidget {
               Text(
                 '$totalCards ${totalCards <= 1 ? 'card' : 'cards'}',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: cardCountFontSize,
                   color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: hasDue ? Colors.orange.shade50 : Colors.green.shade50,
                   borderRadius: BorderRadius.circular(8),
@@ -87,14 +94,14 @@ class LevelCard extends StatelessWidget {
                   children: [
                     Icon(
                       hasDue ? Icons.alarm : Icons.check_circle_outline,
-                      size: 14,
+                      size: 16,
                       color: hasDue ? Colors.orange.shade800 : Colors.green.shade700,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       hasDue ? '$dueCount' : '0',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: dueBadgeFontSize,
                         fontWeight: FontWeight.bold,
                         color: hasDue ? Colors.orange.shade900 : Colors.green.shade700,
                       ),
