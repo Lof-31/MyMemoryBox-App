@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import pour HapticFeedback
 import '../models/flashcard.dart';
 
 class ReviewScreen extends StatefulWidget {
@@ -38,7 +39,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
     super.initState();
     _reviewCards = List.from(widget.cards);
     _startTime = DateTime.now();
-    _confettiController = ConfettiController(duration: const Duration(milliseconds: 100));
+    _confettiController =
+        ConfettiController(duration: const Duration(milliseconds: 50));
     _audioPlayer = AudioPlayer();
   }
 
@@ -50,6 +52,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
   }
 
   Future<void> _triggerVictoryCelebration() async {
+    HapticFeedback.mediumImpact(); // Vibration festive
     _confettiController.play();
     try {
       await _audioPlayer.play(AssetSource('sounds/victory.mp3'));
@@ -58,16 +61,26 @@ class _ReviewScreenState extends State<ReviewScreen> {
     }
   }
 
+  void _toggleCardFlip() {
+    HapticFeedback.selectionClick(); // Micro-vibration au retournement
+    setState(() {
+      _showAnswer = !_showAnswer;
+    });
+  }
+
   void _onAnswer(bool success) {
+    // Vibration différenciée selon le succès ou l'échec
+    if (success) {
+      HapticFeedback.lightImpact();
+      _correctCount++;
+    } else {
+      HapticFeedback.mediumImpact();
+      _failedCount++;
+    }
+
     final currentCard = _reviewCards[_currentIndex];
     final updatedCard = success ? currentCard.promote() : currentCard.demote();
     _updatedCards.add(updatedCard);
-
-    if (success) {
-      _correctCount++;
-    } else {
-      _failedCount++;
-    }
 
     if (_currentIndex + 1 < _reviewCards.length) {
       setState(() {
@@ -139,52 +152,62 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 20, horizontal: 16),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           Column(
                             children: [
-                              Icon(Icons.check_circle_outline, color: Colors.green.shade600, size: 28),
+                              Icon(Icons.check_circle_outline,
+                                  color: Colors.green.shade600, size: 28),
                               const SizedBox(height: 6),
                               Text(
                                 '$_correctCount',
-                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 'Promoted',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey.shade600),
                               ),
                             ],
                           ),
                           Column(
                             children: [
-                              Icon(Icons.replay_outlined, color: Colors.red.shade500, size: 28),
+                              Icon(Icons.replay_outlined,
+                                  color: Colors.red.shade500, size: 28),
                               const SizedBox(height: 6),
                               Text(
                                 '$_failedCount',
-                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 'Demoted',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey.shade600),
                               ),
                             ],
                           ),
                           Column(
                             children: [
-                              Icon(Icons.timer_outlined, color: theme.colorScheme.primary, size: 28),
+                              Icon(Icons.timer_outlined,
+                                  color: theme.colorScheme.primary, size: 28),
                               const SizedBox(height: 6),
                               Text(
                                 _formatDuration(_sessionDuration),
-                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 'Time Spent',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey.shade600),
                               ),
                             ],
                           ),
@@ -205,14 +228,17 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         children: [
                           const Text(
                             'Success Rate',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w600),
                           ),
                           Text(
                             '$accuracy%',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: accuracy >= 70 ? Colors.green.shade700 : Colors.orange.shade800,
+                              color: accuracy >= 70
+                                  ? Colors.green.shade700
+                                  : Colors.orange.shade800,
                             ),
                           ),
                         ],
@@ -224,6 +250,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     width: double.infinity,
                     child: FilledButton(
                       onPressed: () {
+                        HapticFeedback.lightImpact();
                         Navigator.pop(context, _updatedCards);
                       },
                       style: FilledButton.styleFrom(
@@ -231,7 +258,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       ),
                       child: const Text(
                         'Back to Home',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -240,6 +268,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
             ),
           ),
 
+          // Confettis en éventail tirés du bas
           Positioned(
             bottom: 0,
             child: ConfettiWidget(
@@ -262,7 +291,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
               ],
             ),
           ),
-
         ],
       ),
     );
@@ -297,16 +325,13 @@ class _ReviewScreenState extends State<ReviewScreen> {
             LinearProgressIndicator(
               value: (_currentIndex + 1) / _reviewCards.length,
               backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
+              valueColor:
+              AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
             ),
             const SizedBox(height: 24),
             Expanded(
               child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showAnswer = !_showAnswer;
-                  });
-                },
+                onTap: _toggleCardFlip,
                 child: Card(
                   elevation: 4,
                   shape: RoundedRectangleBorder(
@@ -338,7 +363,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         ),
                         const SizedBox(height: 30),
                         Text(
-                          _showAnswer ? 'Tap to hide answer' : 'Tap to reveal answer',
+                          _showAnswer
+                              ? 'Tap to hide answer'
+                              : 'Tap to reveal answer',
                           style: TextStyle(
                             fontSize: 12,
                             fontStyle: FontStyle.italic,
@@ -368,7 +395,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         children: [
                           Icon(Icons.close),
                           SizedBox(width: 8),
-                          Text('Forgot', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text('Forgot',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -386,7 +414,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         children: [
                           Icon(Icons.check),
                           SizedBox(width: 8),
-                          Text('Remembered', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text('Remembered',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -400,12 +429,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _showAnswer = true;
-                    });
-                  },
-                  child: const Text('Show Answer', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onPressed: _toggleCardFlip,
+                  child: const Text('Show Answer',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
           ],
