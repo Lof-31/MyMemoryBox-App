@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  confetti: ^0.7.0
+  audioplayers: ^6.0.0
   uuid: ^4.5.1
   shared_preferences: ^2.5.3
   flutter_local_notifications: ^18.0.1
@@ -61,6 +63,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/sounds/victory.mp3
 
   # To add assets to your application, add an assets section, like this:
   # assets:

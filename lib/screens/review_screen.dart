@@ -1,3 +1,6 @@
+import 'dart:math';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
 
@@ -27,11 +30,32 @@ class _ReviewScreenState extends State<ReviewScreen> {
   Duration _sessionDuration = Duration.zero;
   bool _isSessionFinished = false;
 
+  late ConfettiController _confettiController;
+  late AudioPlayer _audioPlayer;
+
   @override
   void initState() {
     super.initState();
     _reviewCards = List.from(widget.cards);
     _startTime = DateTime.now();
+    _confettiController = ConfettiController(duration: const Duration(milliseconds: 100));
+    _audioPlayer = AudioPlayer();
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _triggerVictoryCelebration() async {
+    _confettiController.play();
+    try {
+      await _audioPlayer.play(AssetSource('sounds/victory.mp3'));
+    } catch (e) {
+      debugPrint('Error playing victory sound: $e');
+    }
   }
 
   void _onAnswer(bool success) {
@@ -55,6 +79,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         _sessionDuration = DateTime.now().difference(_startTime);
         _isSessionFinished = true;
       });
+      _triggerVictoryCelebration();
     }
   }
 
@@ -77,139 +102,168 @@ class _ReviewScreenState extends State<ReviewScreen> {
         title: const Text('Session Summary'),
         automaticallyImplyLeading: false,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.emoji_events_outlined,
-                size: 80,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Review Completed!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Great job keeping your memory fresh.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Column(
+      body: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.emoji_events_outlined,
+                    size: 80,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Review Completed!',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Great job keeping your memory fresh.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          Icon(Icons.check_circle_outline, color: Colors.green.shade600, size: 28),
-                          const SizedBox(height: 6),
-                          Text(
-                            '$_correctCount',
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          Column(
+                            children: [
+                              Icon(Icons.check_circle_outline, color: Colors.green.shade600, size: 28),
+                              const SizedBox(height: 6),
+                              Text(
+                                '$_correctCount',
+                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Promoted',
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Promoted',
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          Column(
+                            children: [
+                              Icon(Icons.replay_outlined, color: Colors.red.shade500, size: 28),
+                              const SizedBox(height: 6),
+                              Text(
+                                '$_failedCount',
+                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Demoted',
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              Icon(Icons.timer_outlined, color: theme.colorScheme.primary, size: 28),
+                              const SizedBox(height: 6),
+                              Text(
+                                _formatDuration(_sessionDuration),
+                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Time Spent',
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      Column(
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(Icons.replay_outlined, color: Colors.red.shade500, size: 28),
-                          const SizedBox(height: 6),
-                          Text(
-                            '$_failedCount',
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          const Text(
+                            'Success Rate',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                           ),
-                          const SizedBox(height: 2),
                           Text(
-                            'Demoted',
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                            '$accuracy%',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: accuracy >= 70 ? Colors.green.shade700 : Colors.orange.shade800,
+                            ),
                           ),
                         ],
                       ),
-                      Column(
-                        children: [
-                          Icon(Icons.timer_outlined, color: theme.colorScheme.primary, size: 28),
-                          const SizedBox(height: 6),
-                          Text(
-                            _formatDuration(_sessionDuration),
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Time Spent',
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                          ),
-                        ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context, _updatedCards);
+                      },
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Success Rate',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                      child: const Text(
+                        'Back to Home',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                      Text(
-                        '$accuracy%',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: accuracy >= 70 ? Colors.green.shade700 : Colors.orange.shade800,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    Navigator.pop(context, _updatedCards);
-                  },
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text(
-                    'Back to Home',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+
+          Positioned(
+            bottom: 0,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: -pi / 2,
+              blastDirectionality: BlastDirectionality.explosive,
+              maxBlastForce: 35,
+              minBlastForce: 10,
+              emissionFrequency: 0.0,
+              numberOfParticles: 100,
+              gravity: 0.2,
+              shouldLoop: false,
+              colors: const [
+                Colors.green,
+                Colors.blue,
+                Colors.pink,
+                Colors.orange,
+                Colors.purple,
+                Colors.amber,
+              ],
+            ),
+          ),
+
+        ],
       ),
     );
   }
