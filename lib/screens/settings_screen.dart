@@ -226,6 +226,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     final primaryColor = Theme.of(context).colorScheme.primary;
+    const double creditsFontSize = 14;
 
     return Scaffold(
       appBar: AppBar(
@@ -359,6 +360,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 40),
+
+          // --- SECTION CRÉDITS ---
+          Center(
+            child: Column(
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Created with ',
+                      style: TextStyle(
+                        fontSize: creditsFontSize,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.favorite_rounded,
+                      size: creditsFontSize+1,
+                      color: Colors.redAccent,
+                    ),
+                    Text(
+                      ' by ',
+                      style: TextStyle(
+                        fontSize: creditsFontSize,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    Text(
+                      'Louis FILLOUX',
+                      style: TextStyle(
+                        fontSize: creditsFontSize,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'My Memory Box',
+                  style: TextStyle(
+                    fontSize: creditsFontSize-2,
+                    color: Colors.grey.shade400,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
