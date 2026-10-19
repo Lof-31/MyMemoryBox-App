@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
 import '../theme/app_theme.dart';
+import '../utils/dates.dart';
 import 'box_picker_dialog.dart';
 import 'level_badge.dart';
 
@@ -164,7 +165,7 @@ class FlashcardTile extends StatelessWidget {
       card.nextReviewDate.month,
       card.nextReviewDate.day,
     );
-    final int daysLeft = reviewDate.difference(today).inDays;
+    final int daysLeft = daysBetween(today, reviewDate);
 
     final bool isDue = daysLeft <= 0;
     final colors = context.colors;

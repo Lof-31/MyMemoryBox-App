@@ -61,7 +61,7 @@ class CsvService {
       final back = cell('back');
       final level = cell('level').isEmpty ? 0 : int.tryParse(cell('level'));
       final date = cell('next_review_date').isEmpty
-          ? today.add(const Duration(days: 1))
+          ? DateTime(today.year, today.month, today.day + 1)
           : _parseDate(cell('next_review_date'));
       final reversedText = cell('reversed').toLowerCase();
 

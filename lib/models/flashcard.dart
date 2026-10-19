@@ -44,7 +44,7 @@ class Flashcard {
       backText: backText,
       level: 0,
       isReversed: false,
-      nextReviewDate: DateTime(now.year, now.month, now.day).add(const Duration(days: 1)),
+      nextReviewDate: DateTime(now.year, now.month, now.day + 1),
     );
   }
 
@@ -52,7 +52,7 @@ class Flashcard {
     final newLevel = level < 8 ? level + 1 : 8;
     final nextInterval = pow(2, newLevel).toInt();
     final now = DateTime.now();
-    final nextDate = DateTime(now.year, now.month, now.day).add(Duration(days: nextInterval));
+    final nextDate = DateTime(now.year, now.month, now.day + nextInterval);
 
     return Flashcard(
       id: id,
@@ -66,7 +66,7 @@ class Flashcard {
 
   Flashcard demote() {
     final now = DateTime.now();
-    final nextDate = DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+    final nextDate = DateTime(now.year, now.month, now.day + 1);
 
     return Flashcard(
       id: id,
@@ -80,8 +80,7 @@ class Flashcard {
 
   Flashcard moveTo(int newLevel) {
     final now = DateTime.now();
-    final nextDate = DateTime(now.year, now.month, now.day)
-        .add(Duration(days: pow(2, newLevel).toInt()));
+    final nextDate = DateTime(now.year, now.month, now.day + pow(2, newLevel).toInt());
 
     return copyWith(level: newLevel, nextReviewDate: nextDate);
   }

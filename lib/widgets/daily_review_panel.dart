@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
 import '../theme/app_theme.dart';
+import '../utils/dates.dart';
 import 'level_badge.dart';
 
 const int _secondsPerCard = 5;
@@ -427,7 +428,7 @@ class _UpcomingCard extends StatelessWidget {
     final nextDate = futureDates.first;
     final nextCards =
         cards.where((c) => _dateOnly(c.nextReviewDate) == nextDate).toList();
-    final int daysAway = nextDate.difference(today).inDays;
+    final int daysAway = daysBetween(today, nextDate);
     final String when = daysAway == 1 ? 'Tomorrow' : 'In $daysAway days';
     final colors = context.colors;
 

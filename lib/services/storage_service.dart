@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/flashcard.dart';
+import '../utils/dates.dart';
 
 class StorageService {
   static const String _storageKey = 'flashcards_data';
@@ -121,7 +122,7 @@ class StorageService {
     final DateTime now = DateTime.now();
     final DateTime today = DateTime(now.year, now.month, now.day);
     final DateTime lastDate = DateTime.parse(lastDateStr);
-    final int diffInDays = today.difference(lastDate).inDays;
+    final int diffInDays = daysBetween(lastDate, today);
 
     if (diffInDays > 1) {
       await prefs.setInt(_streakCountKey, 0);
