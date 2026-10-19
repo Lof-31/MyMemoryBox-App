@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
+import 'box_picker_dialog.dart';
 
 class FlashcardTile extends StatelessWidget {
   final Flashcard card;
   final Function(String id) onDelete;
   final Function(Flashcard card) onEdit;
+
+  // Mode sélection multiple : un tap coche/décoche la carte au lieu d'ouvrir le menu
+  final bool selectionMode;
+  final bool isSelected;
+  final VoidCallback? onSelectToggle;
 
   static const double cardFontSize = 14.0;
 
@@ -13,6 +19,9 @@ class FlashcardTile extends StatelessWidget {
     required this.card,
     required this.onDelete,
     required this.onEdit,
+    this.selectionMode = false,
+    this.isSelected = false,
+    this.onSelectToggle,
   });
 
   void _showEditDialog(BuildContext context) {
@@ -63,67 +72,9 @@ class FlashcardTile extends StatelessWidget {
     );
   }
 
-  void _showMoveDialog(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Move Card'),
-        content: SizedBox(
-          width: 260,
-          child: GridView.count(
-            crossAxisCount: 3,
-            shrinkWrap: true,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            children: List.generate(9, (level) {
-              final bool isCurrent = level == card.level;
-
-              return Material(
-                color: isCurrent
-                    ? primaryColor
-                    : primaryColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    if (!isCurrent) onEdit(card.moveTo(level));
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '$level',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: isCurrent ? Colors.white : primaryColor,
-                        ),
-                      ),
-                      Text(
-                        '${1 << level}d',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isCurrent ? Colors.white70 : Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _showMoveDialog(BuildContext context) async {
+    final level = await showBoxPickerDialog(context, currentLevel: card.level);
+    if (level != null) onEdit(card.moveTo(level));
   }
 
   void _confirmDelete(BuildContext context) {
@@ -207,15 +158,21 @@ class FlashcardTile extends StatelessWidget {
     final String dueLabel = isDue ? 'Today' : 'in ${daysLeft}d';
     final Color dueColor = isDue ? Colors.orange.shade800 : Colors.grey.shade600;
 
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Card(
       elevation: 1.5,
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
+      color: isSelected ? primaryColor.withValues(alpha: 0.12) : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
+        side: isSelected
+            ? BorderSide(color: primaryColor, width: 2)
+            : BorderSide.none,
       ),
       child: InkWell(
-        onTap: () => _showActionModal(context),
+        onTap: selectionMode ? onSelectToggle : () => _showActionModal(context),
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
@@ -236,14 +193,23 @@ class FlashcardTile extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Text(
-                    dueLabel,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: isDue ? FontWeight.bold : FontWeight.w600,
-                      color: dueColor,
+                  if (selectionMode)
+                    Icon(
+                      isSelected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      size: 22,
+                      color: isSelected ? primaryColor : Colors.grey.shade400,
+                    )
+                  else
+                    Text(
+                      dueLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isDue ? FontWeight.bold : FontWeight.w600,
+                        color: dueColor,
+                      ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 4),

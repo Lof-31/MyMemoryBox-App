@@ -121,6 +121,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _loadData();
   }
 
+  Future<void> _deleteCards(Set<String> ids) async {
+    final updatedList = _cards.where((c) => !ids.contains(c.id)).toList();
+    await _storageService.saveCards(updatedList);
+    _loadData();
+  }
+
+  Future<void> _moveCards(Set<String> ids, int level) async {
+    final updatedList = _cards
+        .map((c) => ids.contains(c.id) && c.level != level ? c.moveTo(level) : c)
+        .toList();
+    await _storageService.saveCards(updatedList);
+    _loadData();
+  }
+
   List<Flashcard> get _dueCards => _cards.where((c) => c.isDue).toList();
 
   Future<void> _startReview() async {
@@ -326,6 +340,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         cards: _cards,
         onDelete: _deleteCard,
         onEdit: _editCard,
+        onDeleteMany: _deleteCards,
+        onMoveMany: _moveCards,
       ),
       _buildBoxesView(),
       SettingsScreen(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
+import '../widgets/box_picker_dialog.dart';
 import '../widgets/flashcard_tile.dart';
 
 enum CardSortType {
@@ -13,12 +14,16 @@ class CardListScreen extends StatefulWidget {
   final List<Flashcard> cards;
   final Function(String id) onDelete;
   final Function(Flashcard card) onEdit;
+  final Function(Set<String> ids) onDeleteMany;
+  final Function(Set<String> ids, int level) onMoveMany;
 
   const CardListScreen({
     super.key,
     required this.cards,
     required this.onDelete,
     required this.onEdit,
+    required this.onDeleteMany,
+    required this.onMoveMany,
   });
 
   @override
@@ -29,6 +34,138 @@ class _CardListScreenState extends State<CardListScreen> {
   String _searchQuery = '';
   CardSortType _selectedSortType = CardSortType.reviewDate;
   bool _isAscending = true;
+  bool _isSelecting = false;
+  final Set<String> _selectedIds = {};
+
+  @override
+  void didUpdateWidget(CardListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Retire de la sélection les cartes qui n'existent plus
+    final existingIds = widget.cards.map((c) => c.id).toSet();
+    _selectedIds.retainWhere(existingIds.contains);
+  }
+
+  void _exitSelection() {
+    setState(() {
+      _isSelecting = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelected(String id) {
+    setState(() {
+      if (!_selectedIds.remove(id)) _selectedIds.add(id);
+    });
+  }
+
+  void _toggleSelectAll(List<Flashcard> visibleCards) {
+    final visibleIds = visibleCards.map((c) => c.id);
+    setState(() {
+      if (visibleIds.every(_selectedIds.contains)) {
+        _selectedIds.removeAll(visibleIds);
+      } else {
+        _selectedIds.addAll(visibleIds);
+      }
+    });
+  }
+
+  Future<void> _moveSelected() async {
+    final levels = widget.cards
+        .where((c) => _selectedIds.contains(c.id))
+        .map((c) => c.level)
+        .toSet();
+    final level = await showBoxPickerDialog(
+      context,
+      title: _selectedIds.length > 1
+          ? 'Move ${_selectedIds.length} Cards'
+          : 'Move Card',
+      currentLevel: levels.length == 1 ? levels.first : null,
+    );
+    if (level == null) return;
+    widget.onMoveMany(Set.from(_selectedIds), level);
+    _exitSelection();
+  }
+
+  void _confirmDeleteSelected() {
+    final count = _selectedIds.length;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Flashcards'),
+        content: Text(
+          'Are you sure you want to delete $count card${count > 1 ? 's' : ''}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              widget.onDeleteMany(Set.from(_selectedIds));
+              _exitSelection();
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  AppBar _buildAppBar(List<Flashcard> visibleCards) {
+    if (!_isSelecting) {
+      return AppBar(
+        title: const Text('My Cards'),
+        actions: [
+          if (widget.cards.isNotEmpty)
+            TextButton.icon(
+              onPressed: () => setState(() => _isSelecting = true),
+              icon: const Icon(Icons.checklist_rounded),
+              label: const Text('Select cards'),
+            ),
+        ],
+      );
+    }
+
+    final bool allVisibleSelected = visibleCards.isNotEmpty &&
+        visibleCards.every((c) => _selectedIds.contains(c.id));
+    final bool hasSelection = _selectedIds.isNotEmpty;
+
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        tooltip: 'Cancel',
+        onPressed: _exitSelection,
+      ),
+      title: Text('${_selectedIds.length} selected'),
+      actions: [
+        IconButton(
+          icon: Icon(allVisibleSelected
+              ? Icons.deselect_rounded
+              : Icons.select_all_rounded),
+          tooltip: allVisibleSelected ? 'Deselect all' : 'Select all',
+          onPressed: visibleCards.isEmpty
+              ? null
+              : () => _toggleSelectAll(visibleCards),
+        ),
+        IconButton(
+          icon: const Icon(Icons.drive_file_move_outlined),
+          tooltip: 'Move',
+          onPressed: hasSelection ? _moveSelected : null,
+        ),
+        IconButton(
+          icon: Icon(Icons.delete_outline,
+              color: hasSelection ? Colors.red : null),
+          tooltip: 'Delete',
+          onPressed: hasSelection ? _confirmDeleteSelected : null,
+        ),
+      ],
+    );
+  }
 
   List<Flashcard> get _processedCards {
     List<Flashcard> list = List.from(widget.cards);
@@ -257,9 +394,7 @@ class _CardListScreenState extends State<CardListScreen> {
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Cards'),
-      ),
+      appBar: _buildAppBar(processedCards),
       body: Column(
         children: [
           // Barre de recherche et bouton de tri
@@ -349,10 +484,14 @@ class _CardListScreenState extends State<CardListScreen> {
               ),
               itemCount: processedCards.length,
               itemBuilder: (context, index) {
+                final card = processedCards[index];
                 return FlashcardTile(
-                  card: processedCards[index],
+                  card: card,
                   onDelete: widget.onDelete,
                   onEdit: widget.onEdit,
+                  selectionMode: _isSelecting,
+                  isSelected: _selectedIds.contains(card.id),
+                  onSelectToggle: () => _toggleSelected(card.id),
                 );
               },
             ),
