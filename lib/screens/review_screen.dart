@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import pour HapticFeedback
 import '../models/flashcard.dart';
 import '../theme/app_theme.dart';
+import '../widgets/review_card.dart';
 
 class ReviewScreen extends StatefulWidget {
   final int level;
@@ -25,6 +26,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
   final List<Flashcard> _updatedCards = [];
   int _currentIndex = 0;
   bool _showAnswer = false;
+  final GlobalKey<ReviewCardState> _cardKey = GlobalKey<ReviewCardState>();
 
   int _correctCount = 0;
   int _failedCount = 0;
@@ -327,53 +329,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
             ),
             const SizedBox(height: 24),
             Expanded(
-              child: GestureDetector(
+              child: ReviewCard(
+                key: _cardKey,
+                card: card,
+                showAnswer: _showAnswer,
                 onTap: _toggleCardFlip,
-                child: Card(
-                  elevation: 3,
-                  color: context.colors.surfaceContainerLow,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _showAnswer ? 'ANSWER' : 'QUESTION',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                            color: context.colors.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          _showAnswer ? card.answerText : card.promptText,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        Text(
-                          _showAnswer
-                              ? 'Tap to hide answer'
-                              : 'Tap to reveal answer',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: context.colors.outline,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                onSwiped: _onAnswer,
               ),
             ),
             const SizedBox(height: 24),
@@ -387,7 +348,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         foregroundColor: context.colors.onErrorContainer,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      onPressed: () => _onAnswer(false),
+                      onPressed: () => _cardKey.currentState?.swipeAway(false),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -407,7 +368,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         foregroundColor: context.appColors.onSuccess,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      onPressed: () => _onAnswer(true),
+                      onPressed: () => _cardKey.currentState?.swipeAway(true),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
