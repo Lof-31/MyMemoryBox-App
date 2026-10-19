@@ -73,7 +73,7 @@ class Flashcard {
       frontText: frontText,
       backText: backText,
       level: 0,
-      isReversed: false,
+      isReversed: !isReversed,
       nextReviewDate: nextDate,
     );
   }
