@@ -12,8 +12,9 @@ import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int index)? onThemeChanged;
+  final Function(ThemeMode mode)? onThemeModeChanged;
 
-  const HomeScreen({super.key, this.onThemeChanged});
+  const HomeScreen({super.key, this.onThemeChanged, this.onThemeModeChanged});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -135,8 +136,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _loadData();
   }
 
-  /// Ajoute les cartes importées en ignorant celles dont le recto et le verso
-  /// existent déjà. Renvoie le nombre de cartes réellement ajoutées.
   Future<int> _importCards(List<Flashcard> imported) async {
     String key(Flashcard c) =>
         '${c.frontText.trim().toLowerCase()}\u0000${c.backText.trim().toLowerCase()}';
@@ -175,7 +174,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         DateTime.now(),
         sessionCardCount,
       );
-      // Une carte réussie monte d'au moins une boîte, une carte ratée retombe en boîte 0
       await _storageService.saveDailyCorrectCount(
         DateTime.now(),
         result.where((c) => c.level > 0).length,
@@ -210,7 +208,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ],
       ),
       body: ListView(
-        // Marge basse pour ne pas passer sous le bouton "New Card"
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
         children: [
           StreakForecastBar(
@@ -242,7 +239,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Boxes')),
-      // Les 9 boîtes se partagent toute la hauteur disponible, sans défilement
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
         child: Column(
@@ -296,11 +292,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onEdit: _editCard,
         onDeleteMany: _deleteCards,
         onMoveMany: _moveCards,
-        onImport: _importCards,
       ),
       _buildBoxesView(),
       SettingsScreen(
+        cards: _cards,
         onThemeChanged: widget.onThemeChanged,
+        onThemeModeChanged: widget.onThemeModeChanged,
+        onImport: _importCards,
         onDataReset: _loadData,
       ),
     ];

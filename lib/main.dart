@@ -29,6 +29,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final StorageService _storageService = StorageService();
   int _colorIndex = 0;
+  ThemeMode _themeMode = ThemeMode.system;
 
   @override
   void initState() {
@@ -38,14 +39,22 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _loadThemeColor() async {
     final index = await _storageService.getThemeColorIndex();
+    final themeMode = await _storageService.getThemeMode();
     setState(() {
       _colorIndex = (index >= 0 && index < appThemeColors.length) ? index : 0;
+      _themeMode = themeMode;
     });
   }
 
   void updateThemeColor(int newIndex) {
     setState(() {
       _colorIndex = newIndex;
+    });
+  }
+
+  void updateThemeMode(ThemeMode mode) {
+    setState(() {
+      _themeMode = mode;
     });
   }
 
@@ -58,8 +67,10 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(primaryColor, Brightness.light),
       darkTheme: buildAppTheme(primaryColor, Brightness.dark),
+      themeMode: _themeMode,
       home: HomeScreen(
         onThemeChanged: updateThemeColor,
+        onThemeModeChanged: updateThemeMode,
       ),
     );
   }

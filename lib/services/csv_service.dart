@@ -8,10 +8,6 @@ class CsvImportResult {
   CsvImportResult(this.cards, this.invalidRows);
 }
 
-/// Conversion des cartes vers / depuis un fichier CSV.
-///
-/// Colonnes : front, back, level, next_review_date (AAAA-MM-JJ), reversed.
-/// À l'import, seules front et back sont obligatoires.
 class CsvService {
   static const List<String> _columns = [
     'front',
@@ -36,7 +32,6 @@ class CsvService {
   }
 
   CsvImportResult parse(String content) {
-    // Retire le BOM UTF-8 éventuel (ajouté par Excel)
     if (content.startsWith('﻿')) content = content.substring(1);
 
     final firstLine = content.split('\n').first;
@@ -45,7 +40,6 @@ class CsvService {
         .toList();
     if (rows.isEmpty) return CsvImportResult([], 0);
 
-    // Avec une ligne d'en-tête, les colonnes peuvent être dans n'importe quel ordre
     final header = rows.first.map((h) => h.trim().toLowerCase()).toList();
     final bool hasHeader = header.contains('front') && header.contains('back');
     final Map<String, int> index = {
@@ -94,7 +88,6 @@ class CsvService {
     return CsvImportResult(cards, invalid);
   }
 
-  // Excel en français utilise ';' comme séparateur, d'où la détection
   String _detectDelimiter(String headerLine) {
     final candidates = [',', ';', '\t'];
     candidates.sort((a, b) =>
@@ -102,7 +95,6 @@ class CsvService {
     return candidates.first;
   }
 
-  // Parseur CSV gérant les guillemets, les "" échappés et les retours à la ligne dans une cellule
   List<List<String>> _parseRows(String content, String delimiter) {
     final rows = <List<String>>[];
     var row = <String>[];
@@ -151,7 +143,6 @@ class CsvService {
     return value;
   }
 
-  // Accepte AAAA-MM-JJ (format d'export) et JJ/MM/AAAA (tableurs en français)
   DateTime? _parseDate(String value) {
     final fr = RegExp(r'^(\d{1,2})/(\d{1,2})/(\d{4})$').firstMatch(value);
     final parsed = fr != null

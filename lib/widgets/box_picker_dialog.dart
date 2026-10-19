@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Affiche une grille des 9 boîtes et renvoie le niveau choisi (null si annulé).
 Future<int?> showBoxPickerDialog(
   BuildContext context, {
   String title = 'Move Card',

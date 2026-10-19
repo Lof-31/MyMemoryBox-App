@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Import pour HapticFeedback
+import 'package:flutter/services.dart';
 import '../models/flashcard.dart';
 import '../theme/app_theme.dart';
 import '../widgets/review_card.dart';
@@ -55,7 +55,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
   }
 
   Future<void> _triggerVictoryCelebration() async {
-    HapticFeedback.mediumImpact(); // Vibration festive
+    HapticFeedback.mediumImpact();
     _confettiController.play();
     try {
       await _audioPlayer.play(AssetSource('sounds/victory.mp3'));
@@ -65,14 +65,13 @@ class _ReviewScreenState extends State<ReviewScreen> {
   }
 
   void _toggleCardFlip() {
-    HapticFeedback.selectionClick(); // Micro-vibration au retournement
+    HapticFeedback.selectionClick();
     setState(() {
       _showAnswer = !_showAnswer;
     });
   }
 
   void _onAnswer(bool success) {
-    // Vibration différenciée selon le succès ou l'échec
     if (success) {
       HapticFeedback.lightImpact();
       _correctCount++;
@@ -269,7 +268,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
             ),
           ),
 
-          // Confettis en éventail tirés du bas
           Positioned(
             bottom: 0,
             child: ConfettiWidget(

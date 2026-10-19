@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Pastille ronde affichant le numéro de boîte, dans la couleur de cette boîte.
 class LevelBadge extends StatelessWidget {
   final int level;
   final double size;

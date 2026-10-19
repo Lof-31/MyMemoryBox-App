@@ -4,14 +4,11 @@ import '../models/flashcard.dart';
 import '../theme/app_theme.dart';
 import 'level_badge.dart';
 
-/// Carte de révision : se retourne en 3D pour révéler la réponse, puis se
-/// balaie à droite (retenue) ou à gauche (oubliée).
 class ReviewCard extends StatefulWidget {
   final Flashcard card;
   final bool showAnswer;
   final VoidCallback onTap;
 
-  /// Appelé une fois la carte sortie de l'écran ; true = retenue.
   final ValueChanged<bool> onSwiped;
 
   const ReviewCard({
@@ -53,7 +50,6 @@ class ReviewCardState extends State<ReviewCard> with TickerProviderStateMixin {
   void didUpdateWidget(ReviewCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.card.id != widget.card.id) {
-      // Nouvelle carte : repart face question, au centre, sans animation
       _dragController.stop();
       _flipController.value = widget.showAnswer ? 1 : 0;
       _dragX = 0;
@@ -79,7 +75,6 @@ class ReviewCardState extends State<ReviewCard> with TickerProviderStateMixin {
     _dragController.forward(from: 0).whenComplete(() => onDone?.call());
   }
 
-  /// Fait sortir la carte de l'écran puis signale la réponse (utilisé aussi par les boutons).
   void swipeAway(bool remembered) {
     if (_isLeaving) return;
     _isLeaving = true;
@@ -104,7 +99,6 @@ class ReviewCardState extends State<ReviewCard> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
       final width = constraints.maxWidth;
-      // -1 (tout à gauche) à 1 (tout à droite), pour l'inclinaison et la teinte
       final progress = (_dragX / (width * 0.5)).clamp(-1.0, 1.0);
 
       return GestureDetector(
@@ -128,7 +122,6 @@ class ReviewCardState extends State<ReviewCard> with TickerProviderStateMixin {
                     ..setEntry(3, 2, 0.001)
                     ..rotateY(angle),
                   child: showingBack
-                      // La face réponse est retournée une seconde fois pour ne pas être en miroir
                       ? Transform(
                           alignment: Alignment.center,
                           transform: Matrix4.identity()..rotateY(pi),
@@ -148,7 +141,6 @@ class ReviewCardState extends State<ReviewCard> with TickerProviderStateMixin {
     final colors = context.colors;
     final appColors = context.appColors;
     final card = widget.card;
-    // La face montrée en question dépend du sens de la carte (recto ou verso)
     final bool frontShown = card.isReversed == isAnswer;
 
     final Color? swipeColor = progress > 0
@@ -220,7 +212,6 @@ class ReviewCardState extends State<ReviewCard> with TickerProviderStateMixin {
               ],
             ),
           ),
-          // Teinte et libellé qui apparaissent pendant le balayage
           if (swipeColor != null)
             Positioned.fill(
               child: IgnorePointer(

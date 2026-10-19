@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/flashcard.dart';
 
@@ -13,6 +14,7 @@ class StorageService {
   static const String _lastStreakDateKey = 'last_streak_date';
   static const String _themeColorIndexKey = 'theme_color_index';
   static const String _cardsListViewKey = 'cards_list_view';
+  static const String _themeModeKey = 'theme_mode';
 
   Future<List<Flashcard>> loadCards() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -142,6 +144,20 @@ class StorageService {
     final int currentStreak = await getStreak();
     await prefs.setInt(_streakCountKey, currentStreak + 1);
     await prefs.setString(_lastStreakDateKey, formattedDate);
+  }
+
+  Future<ThemeMode> getThemeMode() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? name = prefs.getString(_themeModeKey);
+    return ThemeMode.values.firstWhere(
+      (mode) => mode.name == name,
+      orElse: () => ThemeMode.system,
+    );
+  }
+
+  Future<void> saveThemeMode(ThemeMode mode) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeModeKey, mode.name);
   }
 
   Future<bool> getCardsListView() async {

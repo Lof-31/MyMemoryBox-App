@@ -5,7 +5,7 @@ import 'package:my_memory_box_app/services/csv_service.dart';
 void main() {
   final service = CsvService();
 
-  test('export puis import conserve les cartes', () {
+  test('export then import keeps the cards intact', () {
     final cards = [
       Flashcard(
         id: '1',
@@ -36,7 +36,7 @@ void main() {
     expect(result.cards[1].isReversed, false);
   });
 
-  test('fichier fait à la main : séparateur ;, colonnes partielles, lignes invalides', () {
+  test('handmade file: ; separator, partial columns, invalid rows', () {
     const csv = 'Back;Front;Level\r\n'
         'cat;chat;3\r\n'
         'dog;chien;\r\n'
@@ -55,7 +55,7 @@ void main() {
     expect(result.cards[1].nextReviewDate, tomorrow);
   });
 
-  test('accepte les dates JJ/MM/AAAA', () {
+  test('accepts DD/MM/YYYY dates', () {
     final result = service.parse('front,back,next_review_date\na,b,05/12/2026\n');
     expect(result.cards.single.nextReviewDate, DateTime(2026, 12, 5));
   });

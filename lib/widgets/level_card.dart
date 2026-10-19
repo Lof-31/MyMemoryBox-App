@@ -3,13 +3,10 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'level_badge.dart';
 
-/// Ligne d'une boîte dans My Boxes : intervalle, barre de remplissage
-/// proportionnelle à la boîte la plus remplie, et cartes à revoir.
 class LevelCard extends StatelessWidget {
   final int level;
   final int totalCards;
 
-  /// Nombre de cartes de la boîte la plus remplie, qui sert de longueur pleine à la barre.
   final int maxCards;
   final int dueCount;
   final VoidCallback? onTap;
@@ -30,7 +27,6 @@ class LevelCard extends StatelessWidget {
     final colors = context.colors;
 
     return Opacity(
-      // Les boîtes vides restent visibles mais passent au second plan
       opacity: isEmpty ? 0.5 : 1,
       child: Card(
         clipBehavior: Clip.antiAlias,

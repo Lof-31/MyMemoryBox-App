@@ -1,8 +1,5 @@
-import 'dart:convert';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
-import '../services/csv_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/box_picker_dialog.dart';
@@ -22,7 +19,6 @@ class CardListScreen extends StatefulWidget {
   final Function(Flashcard card) onEdit;
   final Function(Set<String> ids) onDeleteMany;
   final Function(Set<String> ids, int level) onMoveMany;
-  final Future<int> Function(List<Flashcard> cards) onImport;
 
   const CardListScreen({
     super.key,
@@ -31,7 +27,6 @@ class CardListScreen extends StatefulWidget {
     required this.onEdit,
     required this.onDeleteMany,
     required this.onMoveMany,
-    required this.onImport,
   });
 
   @override
@@ -46,7 +41,6 @@ class _CardListScreenState extends State<CardListScreen> {
   final Set<String> _selectedIds = {};
   bool _isListView = false;
 
-  // Filtre rapide : null = toutes les cartes, _dueFilter = à revoir, 0-8 = une boîte
   static const int _dueFilter = -1;
   int? _filter;
 
@@ -75,7 +69,6 @@ class _CardListScreenState extends State<CardListScreen> {
   @override
   void didUpdateWidget(CardListScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Retire de la sélection les cartes qui n'existent plus
     final existingIds = widget.cards.map((c) => c.id).toSet();
     _selectedIds.retainWhere(existingIds.contains);
   }
@@ -152,64 +145,6 @@ class _CardListScreenState extends State<CardListScreen> {
     );
   }
 
-  void _showMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Future<void> _exportCards() async {
-    final csv = CsvService().encode(widget.cards);
-    final now = DateTime.now();
-    final date =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-
-    try {
-      final saved = await FilePicker.saveFile(
-        dialogTitle: 'Export cards',
-        fileName: 'my_memory_box_$date.csv',
-        // BOM pour qu'Excel lise correctement les accents
-        bytes: utf8.encode('﻿$csv'),
-        mimeType: 'text/csv',
-      );
-      if (saved != null) {
-        _showMessage('${widget.cards.length} cards exported.');
-      }
-    } catch (e) {
-      debugPrint('Error exporting cards: $e');
-      _showMessage('Export failed.');
-    }
-  }
-
-  Future<void> _importCardsFromFile() async {
-    try {
-      final file = await FilePicker.pickFile(type: FileType.any);
-      if (file == null) return;
-
-      final content = utf8.decode(await file.readAsBytes(), allowMalformed: true);
-      final result = CsvService().parse(content);
-      if (result.cards.isEmpty) {
-        _showMessage(result.invalidRows > 0
-            ? 'No valid cards found (${result.invalidRows} invalid rows).'
-            : 'No cards found in this file.');
-        return;
-      }
-
-      final added = await widget.onImport(result.cards);
-      final skipped = result.cards.length - added;
-      _showMessage([
-        '$added card${added > 1 ? 's' : ''} imported',
-        if (skipped > 0) '$skipped duplicate${skipped > 1 ? 's' : ''} skipped',
-        if (result.invalidRows > 0)
-          '${result.invalidRows} invalid row${result.invalidRows > 1 ? 's' : ''}',
-      ].join(', '));
-    } catch (e) {
-      debugPrint('Error importing cards: $e');
-      _showMessage('Import failed: the file could not be read.');
-    }
-  }
-
   AppBar _buildAppBar(List<Flashcard> visibleCards) {
     if (!_isSelecting) {
       return AppBar(
@@ -222,41 +157,12 @@ class _CardListScreenState extends State<CardListScreen> {
             tooltip: _isListView ? 'Grid view' : 'List view',
             onPressed: _toggleViewMode,
           ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              if (value == 'select') setState(() => _isSelecting = true);
-              if (value == 'import') _importCardsFromFile();
-              if (value == 'export') _exportCards();
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'select',
-                enabled: widget.cards.isNotEmpty,
-                child: const ListTile(
-                  leading: Icon(Icons.checklist_rounded),
-                  title: Text('Select cards'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'import',
-                child: ListTile(
-                  leading: Icon(Icons.file_upload_outlined),
-                  title: Text('Import cards (CSV)'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              PopupMenuItem(
-                value: 'export',
-                enabled: widget.cards.isNotEmpty,
-                child: const ListTile(
-                  leading: Icon(Icons.file_download_outlined),
-                  title: Text('Export cards (CSV)'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.checklist_rounded),
+            tooltip: 'Select cards',
+            onPressed: widget.cards.isEmpty
+                ? null
+                : () => setState(() => _isSelecting = true),
           ),
         ],
       );
@@ -301,7 +207,6 @@ class _CardListScreenState extends State<CardListScreen> {
   List<Flashcard> get _processedCards {
     List<Flashcard> list = List.from(widget.cards);
 
-    // 1. Filtrage par recherche
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       list = list
@@ -311,14 +216,12 @@ class _CardListScreenState extends State<CardListScreen> {
           .toList();
     }
 
-    // 2. Filtre rapide
     if (_filter == _dueFilter) {
       list = list.where((c) => c.isDue).toList();
     } else if (_filter != null) {
       list = list.where((c) => c.level == _filter).toList();
     }
 
-    // 3. Application du critère de tri
     switch (_selectedSortType) {
       case CardSortType.reviewDate:
         list.sort((a, b) => a.nextReviewDate.compareTo(b.nextReviewDate));
@@ -334,7 +237,6 @@ class _CardListScreenState extends State<CardListScreen> {
         break;
     }
 
-    // 4. Application du sens (Ascendant / Descendant)
     if (!_isAscending) {
       list = list.reversed.toList();
     }
@@ -387,7 +289,6 @@ class _CardListScreenState extends State<CardListScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Poignée de glissement
                   Center(
                     child: Container(
                       width: 40,
@@ -400,7 +301,6 @@ class _CardListScreenState extends State<CardListScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // En-tête avec titre et sélecteur Croissant / Décroissant
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -445,7 +345,6 @@ class _CardListScreenState extends State<CardListScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Options de tri
                   ...CardSortType.values.map((type) {
                     final bool isSelected = _selectedSortType == type;
 
@@ -499,7 +398,6 @@ class _CardListScreenState extends State<CardListScreen> {
                   }),
                   const SizedBox(height: 14),
 
-                  // Bouton OK pour fermer la modale
                   SizedBox(
                     height: 48,
                     child: FilledButton(
@@ -538,7 +436,6 @@ class _CardListScreenState extends State<CardListScreen> {
     );
   }
 
-  /// Filtres rapides : toutes, à revoir, puis une puce par boîte (0 à 8).
   Widget _buildFilterChips() {
     final dueCount = widget.cards.where((c) => c.isDue).length;
     final levelCounts = <int, int>{};
@@ -586,7 +483,6 @@ class _CardListScreenState extends State<CardListScreen> {
     final processedCards = _processedCards;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
-    // En mode sélection, le bouton retour quitte la sélection au lieu de fermer l'app
     return PopScope(
       canPop: !_isSelecting,
       onPopInvokedWithResult: (didPop, _) {
@@ -596,12 +492,10 @@ class _CardListScreenState extends State<CardListScreen> {
       appBar: _buildAppBar(processedCards),
       body: Column(
         children: [
-          // Barre de recherche et bouton de tri
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
             child: Row(
               children: [
-                // Nombre total de cartes, symétrique au bouton de tri
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -679,7 +573,6 @@ class _CardListScreenState extends State<CardListScreen> {
           ),
           _buildFilterChips(),
 
-          // Cartes, en grille ou en liste
           Expanded(
             child: processedCards.isEmpty
                 ? Center(

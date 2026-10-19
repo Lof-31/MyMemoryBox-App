@@ -40,7 +40,7 @@ void main() {
     ));
   }
 
-  testWidgets('cartes à revoir : nombre, durée, répartition et bouton',
+  testWidgets('due cards: count, duration, breakdown and button',
       (tester) async {
     var started = false;
     await pumpPanel(
@@ -65,7 +65,7 @@ void main() {
     expect(started, isTrue);
   });
 
-  testWidgets('révision faite : bilan du jour et prochaine échéance',
+  testWidgets('review done: daily stats and next due date',
       (tester) async {
     await pumpPanel(
       tester,
@@ -82,7 +82,7 @@ void main() {
     expect(find.text('Start Review'), findsNothing);
   });
 
-  testWidgets('rien à revoir : prochaine échéance dans plusieurs jours',
+  testWidgets('nothing due: next review in several days',
       (tester) async {
     await pumpPanel(tester, cards: [card('a', 3, 4), card('b', 3, 8)]);
 
@@ -91,7 +91,7 @@ void main() {
     expect(find.text('1 card'), findsOneWidget);
   });
 
-  testWidgets('aucune carte', (tester) async {
+  testWidgets('no cards', (tester) async {
     await pumpPanel(tester, cards: []);
     expect(find.text('No cards yet'), findsOneWidget);
   });

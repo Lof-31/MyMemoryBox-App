@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Couleurs sémantiques absentes du ColorScheme (succès, série de jours).
-/// Générées à partir d'une graine pour rester lisibles en clair comme en sombre.
 class AppColors extends ThemeExtension<AppColors> {
   final Color success;
   final Color onSuccess;
@@ -77,7 +75,6 @@ ThemeData buildAppTheme(Color seedColor, Brightness brightness) {
     seedColor: seedColor,
     brightness: brightness,
   );
-  // Couleur choisie dans Settings, adoucie en la mélangeant au fond de page
   final fabColor = Color.alphaBlend(
     seedColor.withValues(alpha: 0.5),
     colorScheme.surface,
@@ -87,7 +84,6 @@ ThemeData buildAppTheme(Color seedColor, Brightness brightness) {
     useMaterial3: true,
     colorScheme: colorScheme,
     extensions: [AppColors.of(brightness)],
-    // Cartes en aplat : le contraste vient du fond, pas de l'ombre
     cardTheme: CardThemeData(
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -106,9 +102,6 @@ ThemeData buildAppTheme(Color seedColor, Brightness brightness) {
   );
 }
 
-/// Dégradé des 9 boîtes dérivé de la couleur du thème :
-/// de la plus claire (boîte 0) à la plus intense (boîte 8).
-/// En mode sombre, l'intensité va du sombre vers le lumineux.
 Color boxColor(ColorScheme colorScheme, int level) {
   final hsl = HSLColor.fromColor(colorScheme.primary);
   final t = level.clamp(0, 8) / 8;

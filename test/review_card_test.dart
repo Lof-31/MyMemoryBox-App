@@ -4,7 +4,6 @@ import 'package:my_memory_box_app/models/flashcard.dart';
 import 'package:my_memory_box_app/theme/app_theme.dart';
 import 'package:my_memory_box_app/widgets/review_card.dart';
 
-/// Hôte minimal qui reproduit l'usage de l'écran de révision.
 class _Host extends StatefulWidget {
   final Flashcard card;
   final ValueChanged<bool> onSwiped;
@@ -63,7 +62,7 @@ void main() {
     return results;
   }
 
-  testWidgets('affiche la question, la boîte et le côté, puis se retourne',
+  testWidgets('shows question, box and side, then flips',
       (tester) async {
     await pumpHost(tester, GlobalKey());
 
@@ -78,7 +77,7 @@ void main() {
     expect(find.text('ANSWER · BACK'), findsOneWidget);
   });
 
-  testWidgets('le balayage est ignoré tant que la réponse est cachée',
+  testWidgets('swipe is ignored while the answer is hidden',
       (tester) async {
     final results = await pumpHost(tester, GlobalKey());
 
@@ -89,7 +88,7 @@ void main() {
     expect(find.text('chat'), findsOneWidget);
   });
 
-  testWidgets('balayer à droite = retenue, à gauche = oubliée',
+  testWidgets('swipe right means remembered',
       (tester) async {
     final results = await pumpHost(tester, GlobalKey());
     await tester.tap(find.text('chat'));
@@ -100,7 +99,7 @@ void main() {
     expect(results, [true]);
   });
 
-  testWidgets('balayer à gauche = oubliée', (tester) async {
+  testWidgets('swipe left means forgot', (tester) async {
     final results = await pumpHost(tester, GlobalKey());
     await tester.tap(find.text('chat'));
     await tester.pumpAndSettle();
@@ -110,7 +109,7 @@ void main() {
     expect(results, [false]);
   });
 
-  testWidgets('un petit glissement revient au centre sans répondre',
+  testWidgets('a short drag springs back without answering',
       (tester) async {
     final results = await pumpHost(tester, GlobalKey());
     await tester.tap(find.text('chat'));
@@ -125,14 +124,14 @@ void main() {
     expect(results, isEmpty);
   });
 
-  testWidgets('les boutons déclenchent la même sortie animée', (tester) async {
+  testWidgets('buttons trigger the same animated exit', (tester) async {
     final key = GlobalKey<ReviewCardState>();
     final results = await pumpHost(tester, key);
     await tester.tap(find.text('chat'));
     await tester.pumpAndSettle();
 
     key.currentState!.swipeAway(true);
-    key.currentState!.swipeAway(false); // ignoré : la carte part déjà
+    key.currentState!.swipeAway(false);
     await tester.pumpAndSettle();
     expect(results, [true]);
   });

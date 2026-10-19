@@ -9,15 +9,12 @@ class FlashcardTile extends StatelessWidget {
   final Function(String id) onDelete;
   final Function(Flashcard card) onEdit;
 
-  // Mode sélection multiple : un tap coche/décoche la carte au lieu d'ouvrir le menu
   final bool selectionMode;
   final bool isSelected;
   final VoidCallback? onSelectToggle;
 
-  // Appui long : entre en mode sélection avec cette carte cochée
   final VoidCallback? onLongPress;
 
-  // Affichage en ligne (vue liste) au lieu d'une tuile de grille
   final bool compact;
 
   static const double cardFontSize = 14.0;
@@ -34,7 +31,6 @@ class FlashcardTile extends StatelessWidget {
     this.compact = false,
   });
 
-  /// Échéance lisible : Today, Tomorrow, puis « in 4d ».
   static String dueLabel(int daysLeft) {
     if (daysLeft <= 0) return 'Today';
     if (daysLeft == 1) return 'Tomorrow';
@@ -176,7 +172,6 @@ class FlashcardTile extends StatelessWidget {
     final bool isDue = daysLeft <= 0;
     final colors = context.colors;
 
-    // En mode sélection, la case à cocher remplace l'échéance
     final Widget status = selectionMode
         ? Icon(
             isSelected

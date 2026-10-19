@@ -3,12 +3,10 @@ import '../models/flashcard.dart';
 import '../theme/app_theme.dart';
 import 'level_badge.dart';
 
-/// Estimation du temps de révision par carte, pour afficher une durée indicative.
 const int _secondsPerCard = 5;
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
-/// Nombre de cartes par boîte, trié par numéro de boîte.
 Map<int, int> _countByLevel(Iterable<Flashcard> cards) {
   final counts = <int, int>{};
   for (final c in cards) {
@@ -18,7 +16,6 @@ Map<int, int> _countByLevel(Iterable<Flashcard> cards) {
       counts.entries.toList()..sort((a, b) => a.key.compareTo(b.key)));
 }
 
-/// Série de jours consécutifs, affichée dans l'en-tête.
 class StreakChip extends StatelessWidget {
   final int streak;
 
@@ -62,13 +59,11 @@ class StreakChip extends StatelessWidget {
   }
 }
 
-/// Contenu principal de l'onglet Daily Review, selon l'état de la journée.
 class DailyReviewPanel extends StatelessWidget {
   final List<Flashcard> cards;
   final bool hasReviewedToday;
   final int reviewedToday;
 
-  /// Null si le nombre de réussites n'a pas été enregistré pour aujourd'hui.
   final int? correctToday;
   final VoidCallback onStartReview;
 
@@ -135,7 +130,6 @@ class DailyReviewPanel extends StatelessWidget {
   }
 }
 
-/// Grande carte « à revoir aujourd'hui » avec le bouton de lancement.
 class _DueCard extends StatelessWidget {
   final List<Flashcard> dueCards;
   final VoidCallback onStartReview;
@@ -242,7 +236,6 @@ class _DueCard extends StatelessWidget {
   }
 }
 
-/// Répartition des cartes par boîte : une pastille de boîte suivie du nombre.
 class _BoxBreakdown extends StatelessWidget {
   final Iterable<Flashcard> cards;
   final Color chipColor;
@@ -336,7 +329,6 @@ class _StatusBanner extends StatelessWidget {
   }
 }
 
-/// Bilan de la session du jour : cartes revues et taux de réussite.
 class _TodayStats extends StatelessWidget {
   final int reviewed;
   final int? correct;
@@ -417,7 +409,6 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-/// Prochaine échéance : demain si des cartes y sont prévues, sinon la date la plus proche.
 class _UpcomingCard extends StatelessWidget {
   final List<Flashcard> cards;
 

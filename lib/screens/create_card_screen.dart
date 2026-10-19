@@ -66,7 +66,6 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // --- CARTE PHYSIQUE ---
                 Container(
                   decoration: BoxDecoration(
                     color: colors.surfaceContainerLow,
@@ -86,7 +85,6 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // --- SECTION RECTO (FRONT) ---
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                         child: Column(
@@ -142,7 +140,6 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                         ),
                       ),
 
-                      // --- SÉPARATEUR AVEC BOUTON D'INVERSION ---
                       Stack(
                         alignment: Alignment.center,
                         children: [
@@ -170,7 +167,6 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                         ],
                       ),
 
-                      // --- SECTION VERSO (BACK) ---
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
                         child: Column(
@@ -232,7 +228,6 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
 
                 const SizedBox(height: 24),
 
-                // --- BOUTON DE SAUVEGARDE DIRECTEMENT SOUS LA CARTE ---
                 SizedBox(
                   height: 52,
                   child: FilledButton.icon(

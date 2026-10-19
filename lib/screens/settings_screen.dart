@@ -1,15 +1,25 @@
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../models/flashcard.dart';
+import '../services/csv_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
+  final List<Flashcard> cards;
   final Function(int index)? onThemeChanged;
+  final Function(ThemeMode mode)? onThemeModeChanged;
+  final Future<int> Function(List<Flashcard> cards) onImport;
   final VoidCallback? onDataReset;
 
   const SettingsScreen({
     super.key,
+    required this.cards,
+    required this.onImport,
     this.onThemeChanged,
+    this.onThemeModeChanged,
     this.onDataReset,
   });
 
@@ -21,6 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final StorageService _storageService = StorageService();
 
   int _selectedColorIndex = 0;
+  ThemeMode _themeMode = ThemeMode.system;
   bool _isLoading = true;
 
   @override
@@ -31,7 +42,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final colorIndex = await _storageService.getThemeColorIndex();
+    final themeMode = await _storageService.getThemeMode();
     setState(() {
+      _themeMode = themeMode;
       _selectedColorIndex =
       (colorIndex < appThemeColors.length) ? colorIndex : 0;
       _isLoading = false;
@@ -46,6 +59,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (widget.onThemeChanged != null) {
       widget.onThemeChanged!(index);
     }
+  }
+
+  Future<void> _changeThemeMode(ThemeMode mode) async {
+    setState(() {
+      _themeMode = mode;
+    });
+    await _storageService.saveThemeMode(mode);
+    widget.onThemeModeChanged?.call(mode);
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _exportCards() async {
+    final csv = CsvService().encode(widget.cards);
+    final now = DateTime.now();
+    final date =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    try {
+      final saved = await FilePicker.saveFile(
+        dialogTitle: 'Export cards',
+        fileName: 'my_memory_box_$date.csv',
+        bytes: utf8.encode('\uFEFF$csv'),
+        mimeType: 'text/csv',
+      );
+      if (saved != null) {
+        _showMessage('${widget.cards.length} cards exported.');
+      }
+    } catch (e) {
+      debugPrint('Error exporting cards: $e');
+      _showMessage('Export failed.');
+    }
+  }
+
+  Future<void> _importCardsFromFile() async {
+    try {
+      final file = await FilePicker.pickFile(type: FileType.any);
+      if (file == null) return;
+
+      final content = utf8.decode(await file.readAsBytes(), allowMalformed: true);
+      final result = CsvService().parse(content);
+      if (result.cards.isEmpty) {
+        _showMessage(result.invalidRows > 0
+            ? 'No valid cards found (${result.invalidRows} invalid rows).'
+            : 'No cards found in this file.');
+        return;
+      }
+
+      final added = await widget.onImport(result.cards);
+      final skipped = result.cards.length - added;
+      _showMessage([
+        '$added card${added > 1 ? 's' : ''} imported',
+        if (skipped > 0) '$skipped duplicate${skipped > 1 ? 's' : ''} skipped',
+        if (result.invalidRows > 0)
+          '${result.invalidRows} invalid row${result.invalidRows > 1 ? 's' : ''}',
+      ].join(', '));
+    } catch (e) {
+      debugPrint('Error importing cards: $e');
+      _showMessage('Import failed: the file could not be read.');
+    }
+  }
+
+  Widget _sectionTitle(String title, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+    );
   }
 
   Future<void> _confirmResetData() async {
@@ -78,6 +170,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (isConfirmed == true) {
       await _storageService.clearAllData();
       await _loadSettings();
+      widget.onThemeChanged?.call(0);
+      widget.onThemeModeChanged?.call(ThemeMode.system);
       if (widget.onDataReset != null) {
         widget.onDataReset!();
       }
@@ -107,15 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            'Appearance',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: primaryColor,
-            ),
-          ),
-          const SizedBox(height: 8),
+          _sectionTitle('Appearance', primaryColor),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -164,44 +250,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       );
                     }),
                   ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Theme',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<ThemeMode>(
+                      segments: const [
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          icon: Icon(Icons.brightness_auto_outlined),
+                          label: Text('System'),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          icon: Icon(Icons.light_mode_outlined),
+                          label: Text('Light'),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          icon: Icon(Icons.dark_mode_outlined),
+                          label: Text('Dark'),
+                        ),
+                      ],
+                      selected: {_themeMode},
+                      showSelectedIcon: false,
+                      onSelectionChanged: (selection) =>
+                          _changeThemeMode(selection.first),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 24),
-          Text(
-            'Danger Zone',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: context.colors.error,
-            ),
-          ),
-          const SizedBox(height: 8),
+          _sectionTitle('Data', primaryColor),
           Card(
-            child: ListTile(
-              leading: Icon(
-                Icons.delete_forever_outlined,
-                color: context.colors.error,
-              ),
-              title: const Text(
-                'Delete All Data',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: const Text('Reset flashcards, streak and preferences'),
-              trailing: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: context.colors.error,
-                  foregroundColor: context.colors.onError,
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Icon(Icons.file_upload_outlined, color: primaryColor),
+                  title: const Text('Import cards'),
+                  subtitle: const Text('Add cards from a CSV file'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _importCardsFromFile,
                 ),
-                onPressed: _confirmResetData,
-                child: const Text('Reset'),
-              ),
+                Divider(height: 1, color: context.colors.outlineVariant),
+                ListTile(
+                  enabled: widget.cards.isNotEmpty,
+                  leading: Icon(Icons.file_download_outlined, color: primaryColor),
+                  title: const Text('Export cards'),
+                  subtitle: Text(
+                    'Save all ${widget.cards.length} cards to a CSV file',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _exportCards,
+                ),
+                Divider(height: 1, color: context.colors.outlineVariant),
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_forever_outlined,
+                    color: context.colors.error,
+                  ),
+                  title: Text(
+                    'Delete all data',
+                    style: TextStyle(color: context.colors.error),
+                  ),
+                  subtitle: const Text('Reset cards, streak and preferences'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _confirmResetData,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 40),
 
-          // --- SECTION CRÉDITS ---
           Center(
             child: Column(
               children: [
