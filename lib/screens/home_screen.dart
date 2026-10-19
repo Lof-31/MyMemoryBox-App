@@ -24,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final StorageService _storageService = StorageService();
 
   List<Flashcard> _cards = [];
+  final ValueNotifier<List<Flashcard>> _cardsNotifier = ValueNotifier([]);
   List<String> _reviewHistory = [];
   Map<String, int> _dailyDueHistory = {};
   Map<String, int> _dailyReviewedCountHistory = {};
@@ -43,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _cardsNotifier.dispose();
     super.dispose();
   }
 
@@ -98,6 +100,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     setState(() {
       _cards = cards;
+      _cardsNotifier.value = cards;
       _reviewHistory = history;
       _dailyDueHistory = dueHistory;
       _dailyReviewedCountHistory = reviewedCountHistory;
@@ -169,16 +172,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }).toList();
 
       await _storageService.saveCards(updatedList);
-      await _storageService.saveLastDailyReviewDate(DateTime.now());
       await _storageService.saveDailyReviewedCount(
         DateTime.now(),
-        sessionCardCount,
+        result.length,
       );
       await _storageService.saveDailyCorrectCount(
         DateTime.now(),
         result.where((c) => c.level > 0).length,
       );
-      await _storageService.incrementStreak(DateTime.now());
+
+      // An interrupted session keeps its answers, but the daily review is
+      // only done (and the streak only grows) once every due card is answered.
+      if (result.length == sessionCardCount) {
+        await _storageService.saveLastDailyReviewDate(DateTime.now());
+        await _storageService.incrementStreak(DateTime.now());
+      }
     }
     _loadData();
   }
@@ -262,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       MaterialPageRoute(
                         builder: (context) => BoxDetailScreen(
                           level: index,
-                          cards: _cards,
+                          cards: _cardsNotifier,
                           onDelete: _deleteCard,
                           onEdit: _editCard,
                         ),

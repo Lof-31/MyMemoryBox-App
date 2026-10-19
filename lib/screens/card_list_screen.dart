@@ -33,6 +33,7 @@ class CardListScreen extends StatefulWidget {
 }
 
 class _CardListScreenState extends State<CardListScreen> {
+  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   CardSortType _selectedSortType = CardSortType.reviewDate;
   bool _isAscending = true;
@@ -47,6 +48,12 @@ class _CardListScreenState extends State<CardListScreen> {
       _isSelecting = true;
       _selectedIds.add(id);
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -490,6 +497,7 @@ class _CardListScreenState extends State<CardListScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
+                    controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Search cards...',
                       prefixIcon: const Icon(Icons.search, size: 20),
@@ -497,6 +505,7 @@ class _CardListScreenState extends State<CardListScreen> {
                           ? IconButton(
                         icon: const Icon(Icons.clear, size: 18),
                         onPressed: () {
+                          _searchController.clear();
                           setState(() {
                             _searchQuery = '';
                           });

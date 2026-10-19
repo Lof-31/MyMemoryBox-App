@@ -295,6 +295,19 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Any way of leaving the screen (system back button, iOS back gesture,
+    // app bar arrow) must hand the answers given so far back to the caller.
+    return PopScope<List<Flashcard>>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(context, _updatedCards);
+      },
+      child: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
     if (_reviewCards.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Review')),

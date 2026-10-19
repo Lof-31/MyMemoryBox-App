@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
 import '../theme/app_theme.dart';
@@ -6,7 +7,8 @@ import '../widgets/flashcard_tile.dart';
 
 class BoxDetailScreen extends StatelessWidget {
   final int level;
-  final List<Flashcard> cards;
+  /// Live list of all cards, so edits made from this screen show up at once.
+  final ValueListenable<List<Flashcard>> cards;
   final Function(String id) onDelete;
   final Function(Flashcard card) onEdit;
 
@@ -20,6 +22,13 @@ class BoxDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<List<Flashcard>>(
+      valueListenable: cards,
+      builder: (context, cards, _) => _buildBox(context, cards),
+    );
+  }
+
+  Widget _buildBox(BuildContext context, List<Flashcard> cards) {
     final int intervalDays = pow(2, level).toInt();
     final boxCards = cards.where((c) => c.level == level).toList();
 
