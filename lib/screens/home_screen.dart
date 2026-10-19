@@ -135,6 +135,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _loadData();
   }
 
+  /// Ajoute les cartes importées en ignorant celles dont le recto et le verso
+  /// existent déjà. Renvoie le nombre de cartes réellement ajoutées.
+  Future<int> _importCards(List<Flashcard> imported) async {
+    String key(Flashcard c) =>
+        '${c.frontText.trim().toLowerCase()}\u0000${c.backText.trim().toLowerCase()}';
+
+    final existingKeys = _cards.map(key).toSet();
+    final newCards = imported.where((c) => existingKeys.add(key(c))).toList();
+    if (newCards.isEmpty) return 0;
+
+    await _storageService.saveCards([..._cards, ...newCards]);
+    _loadData();
+    return newCards.length;
+  }
+
   List<Flashcard> get _dueCards => _cards.where((c) => c.isDue).toList();
 
   Future<void> _startReview() async {
@@ -342,6 +357,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onEdit: _editCard,
         onDeleteMany: _deleteCards,
         onMoveMany: _moveCards,
+        onImport: _importCards,
       ),
       _buildBoxesView(),
       SettingsScreen(

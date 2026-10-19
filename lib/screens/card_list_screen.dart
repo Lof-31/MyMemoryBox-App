@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
+import '../services/csv_service.dart';
 import '../widgets/box_picker_dialog.dart';
 import '../widgets/flashcard_tile.dart';
 
@@ -16,6 +19,7 @@ class CardListScreen extends StatefulWidget {
   final Function(Flashcard card) onEdit;
   final Function(Set<String> ids) onDeleteMany;
   final Function(Set<String> ids, int level) onMoveMany;
+  final Future<int> Function(List<Flashcard> cards) onImport;
 
   const CardListScreen({
     super.key,
@@ -24,6 +28,7 @@ class CardListScreen extends StatefulWidget {
     required this.onEdit,
     required this.onDeleteMany,
     required this.onMoveMany,
+    required this.onImport,
   });
 
   @override
@@ -116,6 +121,64 @@ class _CardListScreenState extends State<CardListScreen> {
     );
   }
 
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _exportCards() async {
+    final csv = CsvService().encode(widget.cards);
+    final now = DateTime.now();
+    final date =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    try {
+      final saved = await FilePicker.saveFile(
+        dialogTitle: 'Export cards',
+        fileName: 'my_memory_box_$date.csv',
+        // BOM pour qu'Excel lise correctement les accents
+        bytes: utf8.encode('﻿$csv'),
+        mimeType: 'text/csv',
+      );
+      if (saved != null) {
+        _showMessage('${widget.cards.length} cards exported.');
+      }
+    } catch (e) {
+      debugPrint('Error exporting cards: $e');
+      _showMessage('Export failed.');
+    }
+  }
+
+  Future<void> _importCardsFromFile() async {
+    try {
+      final file = await FilePicker.pickFile(type: FileType.any);
+      if (file == null) return;
+
+      final content = utf8.decode(await file.readAsBytes(), allowMalformed: true);
+      final result = CsvService().parse(content);
+      if (result.cards.isEmpty) {
+        _showMessage(result.invalidRows > 0
+            ? 'No valid cards found (${result.invalidRows} invalid rows).'
+            : 'No cards found in this file.');
+        return;
+      }
+
+      final added = await widget.onImport(result.cards);
+      final skipped = result.cards.length - added;
+      _showMessage([
+        '$added card${added > 1 ? 's' : ''} imported',
+        if (skipped > 0) '$skipped duplicate${skipped > 1 ? 's' : ''} skipped',
+        if (result.invalidRows > 0)
+          '${result.invalidRows} invalid row${result.invalidRows > 1 ? 's' : ''}',
+      ].join(', '));
+    } catch (e) {
+      debugPrint('Error importing cards: $e');
+      _showMessage('Import failed: the file could not be read.');
+    }
+  }
+
   AppBar _buildAppBar(List<Flashcard> visibleCards) {
     if (!_isSelecting) {
       return AppBar(
@@ -127,6 +190,32 @@ class _CardListScreenState extends State<CardListScreen> {
               icon: const Icon(Icons.checklist_rounded),
               label: const Text('Select cards'),
             ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              if (value == 'import') _importCardsFromFile();
+              if (value == 'export') _exportCards();
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'import',
+                child: ListTile(
+                  leading: Icon(Icons.file_upload_outlined),
+                  title: Text('Import cards (CSV)'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'export',
+                enabled: widget.cards.isNotEmpty,
+                child: const ListTile(
+                  leading: Icon(Icons.file_download_outlined),
+                  title: Text('Export cards (CSV)'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
         ],
       );
     }
