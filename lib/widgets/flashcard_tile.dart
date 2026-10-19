@@ -15,8 +15,6 @@ class FlashcardTile extends StatelessWidget {
 
   final VoidCallback? onLongPress;
 
-  final bool compact;
-
   static const double cardFontSize = 14.0;
 
   const FlashcardTile({
@@ -28,7 +26,6 @@ class FlashcardTile extends StatelessWidget {
     this.isSelected = false,
     this.onSelectToggle,
     this.onLongPress,
-    this.compact = false,
   });
 
   static String dueLabel(int daysLeft) {
@@ -201,14 +198,12 @@ class FlashcardTile extends StatelessWidget {
       child: InkWell(
         onTap: selectionMode ? onSelectToggle : () => _showActionModal(context),
         onLongPress: selectionMode ? null : onLongPress,
-        child: compact
-            ? _buildListRow(colors, status)
-            : _buildGridTile(colors, status),
+        child: _buildRow(colors, status),
       ),
     );
   }
 
-  Widget _buildListRow(ColorScheme colors, Widget status) {
+  Widget _buildRow(ColorScheme colors, Widget status) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
@@ -243,58 +238,6 @@ class FlashcardTile extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           status,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGridTile(ColorScheme colors, Widget status) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              LevelBadge(level: card.level),
-              status,
-            ],
-          ),
-          const SizedBox(height: 4),
-          Expanded(
-            child: Align(
-              alignment: Alignment.center,
-              child: Text(
-                card.frontText,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: cardFontSize,
-                  height: 1.15,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-          Divider(height: 6, thickness: 0.8, color: colors.outlineVariant),
-          Expanded(
-            child: Align(
-              alignment: Alignment.center,
-              child: Text(
-                card.backText,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: cardFontSize,
-                  height: 1.15,
-                  color: colors.onSurfaceVariant,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
         ],
       ),
     );

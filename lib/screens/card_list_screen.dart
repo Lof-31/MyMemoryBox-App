@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
-import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/box_picker_dialog.dart';
 import '../widgets/flashcard_tile.dart';
@@ -39,25 +38,9 @@ class _CardListScreenState extends State<CardListScreen> {
   bool _isAscending = true;
   bool _isSelecting = false;
   final Set<String> _selectedIds = {};
-  bool _isListView = false;
 
   static const int _dueFilter = -1;
   int? _filter;
-
-  final StorageService _storageService = StorageService();
-
-  @override
-  void initState() {
-    super.initState();
-    _storageService.getCardsListView().then((isList) {
-      if (mounted) setState(() => _isListView = isList);
-    });
-  }
-
-  void _toggleViewMode() {
-    setState(() => _isListView = !_isListView);
-    _storageService.saveCardsListView(_isListView);
-  }
 
   void _startSelectionWith(String id) {
     setState(() {
@@ -150,13 +133,6 @@ class _CardListScreenState extends State<CardListScreen> {
       return AppBar(
         title: const Text('My Cards'),
         actions: [
-          IconButton(
-            icon: Icon(_isListView
-                ? Icons.grid_view_rounded
-                : Icons.view_agenda_outlined),
-            tooltip: _isListView ? 'Grid view' : 'List view',
-            onPressed: _toggleViewMode,
-          ),
           IconButton(
             icon: const Icon(Icons.checklist_rounded),
             tooltip: 'Select cards',
@@ -423,12 +399,11 @@ class _CardListScreenState extends State<CardListScreen> {
     );
   }
 
-  Widget _buildTile(Flashcard card, {bool compact = false}) {
+  Widget _buildTile(Flashcard card) {
     return FlashcardTile(
       card: card,
       onDelete: widget.onDelete,
       onEdit: widget.onEdit,
-      compact: compact,
       selectionMode: _isSelecting,
       isSelected: _selectedIds.contains(card.id),
       onSelectToggle: () => _toggleSelected(card.id),
@@ -583,27 +558,13 @@ class _CardListScreenState extends State<CardListScreen> {
                       style: TextStyle(color: context.colors.onSurfaceVariant),
                     ),
                   )
-                : _isListView
-                    ? ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(12, 6, 12, 96),
-                        itemCount: processedCards.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) =>
-                            _buildTile(processedCards[index], compact: true),
-                      )
-                    : GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(12, 6, 12, 96),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                          childAspectRatio: 0.70,
-                        ),
-                        itemCount: processedCards.length,
-                        itemBuilder: (context, index) =>
-                            _buildTile(processedCards[index]),
-                      ),
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 96),
+                    itemCount: processedCards.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) =>
+                        _buildTile(processedCards[index]),
+                  ),
           ),
         ],
       ),

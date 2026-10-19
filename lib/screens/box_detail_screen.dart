@@ -24,48 +24,41 @@ class BoxDetailScreen extends StatelessWidget {
     final boxCards = cards.where((c) => c.level == level).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Box $level (${intervalDays}d)'),
-      ),
+      appBar: AppBar(title: Text('Box $level (${intervalDays}d)')),
       body: boxCards.isEmpty
           ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 64,
-              color: context.colors.outline,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No cards in Box $level',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: context.colors.onSurfaceVariant,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.inbox_outlined,
+                    size: 64,
+                    color: context.colors.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No cards in Box $level',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: context.colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(12),
+              itemCount: boxCards.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                return FlashcardTile(
+                  card: boxCards[index],
+                  onDelete: onDelete,
+                  onEdit: onEdit,
+                );
+              },
             ),
-          ],
-        ),
-      )
-          : GridView.builder(
-        padding: const EdgeInsets.all(12),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-          childAspectRatio: 0.70,
-        ),
-        itemCount: boxCards.length,
-        itemBuilder: (context, index) {
-          return FlashcardTile(
-            card: boxCards[index],
-            onDelete: onDelete,
-            onEdit: onEdit,
-          );
-        },
-      ),
     );
   }
 }
