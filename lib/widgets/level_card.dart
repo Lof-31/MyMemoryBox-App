@@ -1,5 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+import 'level_badge.dart';
 
 class LevelCard extends StatelessWidget {
   final int level;
@@ -11,7 +13,6 @@ class LevelCard extends StatelessWidget {
   static const double intervalFontSize = 15;
   static const double cardCountFontSize = 16;
   static const double dueBadgeFontSize = 14;
-  static const double levelAvatarFontSize = 14;
 
   const LevelCard({
     super.key,
@@ -25,32 +26,18 @@ class LevelCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final int intervalDays = pow(2, level).toInt();
     final bool hasDue = dueCount > 0;
+    final colors = context.colors;
+    final appColors = context.appColors;
 
     return Card(
-      elevation: 1.5,
-      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
       child: InkWell(
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 15,
-                backgroundColor: hasDue ? Colors.orange : Colors.indigo,
-                foregroundColor: Colors.white,
-                child: Text(
-                  '$level',
-                  style: const TextStyle(
-                    fontSize: levelAvatarFontSize,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              LevelBadge(level: level),
               const SizedBox(width: 12),
               Expanded(
                 child: Row(
@@ -67,7 +54,7 @@ class LevelCard extends StatelessWidget {
                       '(${intervalDays}d)',
                       style: TextStyle(
                         fontSize: intervalFontSize,
-                        color: Colors.grey.shade600,
+                        color: colors.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -75,10 +62,10 @@ class LevelCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '$totalCards ${totalCards <= 1 ? 'card' : 'cards'}',
+                '$totalCards ${totalCards == 1 ? 'card' : 'cards'}',
                 style: TextStyle(
                   fontSize: cardCountFontSize,
-                  color: Colors.grey.shade700,
+                  color: colors.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -86,7 +73,9 @@ class LevelCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: hasDue ? Colors.orange.shade50 : Colors.green.shade50,
+                  color: hasDue
+                      ? colors.primaryContainer
+                      : appColors.successContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -95,15 +84,19 @@ class LevelCard extends StatelessWidget {
                     Icon(
                       hasDue ? Icons.alarm : Icons.check_circle_outline,
                       size: 16,
-                      color: hasDue ? Colors.orange.shade800 : Colors.green.shade700,
+                      color: hasDue
+                          ? colors.onPrimaryContainer
+                          : appColors.onSuccessContainer,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      hasDue ? '$dueCount' : '0',
+                      '$dueCount',
                       style: TextStyle(
                         fontSize: dueBadgeFontSize,
                         fontWeight: FontWeight.bold,
-                        color: hasDue ? Colors.orange.shade900 : Colors.green.shade700,
+                        color: hasDue
+                            ? colors.onPrimaryContainer
+                            : appColors.onSuccessContainer,
                       ),
                     ),
                   ],

@@ -4,6 +4,7 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import pour HapticFeedback
 import '../models/flashcard.dart';
+import '../theme/app_theme.dart';
 
 class ReviewScreen extends StatefulWidget {
   final int level;
@@ -142,12 +143,11 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     'Great job keeping your memory fresh.',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade600,
+                      color: context.colors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 32),
                   Card(
-                    elevation: 2,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -160,7 +160,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           Column(
                             children: [
                               Icon(Icons.check_circle_outline,
-                                  color: Colors.green.shade600, size: 28),
+                                  color: context.appColors.success, size: 28),
                               const SizedBox(height: 6),
                               Text(
                                 '$_correctCount',
@@ -171,14 +171,14 @@ class _ReviewScreenState extends State<ReviewScreen> {
                               Text(
                                 'Promoted',
                                 style: TextStyle(
-                                    fontSize: 12, color: Colors.grey.shade600),
+                                    fontSize: 12, color: context.colors.onSurfaceVariant),
                               ),
                             ],
                           ),
                           Column(
                             children: [
                               Icon(Icons.replay_outlined,
-                                  color: Colors.red.shade500, size: 28),
+                                  color: context.colors.error, size: 28),
                               const SizedBox(height: 6),
                               Text(
                                 '$_failedCount',
@@ -189,7 +189,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                               Text(
                                 'Demoted',
                                 style: TextStyle(
-                                    fontSize: 12, color: Colors.grey.shade600),
+                                    fontSize: 12, color: context.colors.onSurfaceVariant),
                               ),
                             ],
                           ),
@@ -207,7 +207,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                               Text(
                                 'Time Spent',
                                 style: TextStyle(
-                                    fontSize: 12, color: Colors.grey.shade600),
+                                    fontSize: 12, color: context.colors.onSurfaceVariant),
                               ),
                             ],
                           ),
@@ -217,7 +217,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   ),
                   const SizedBox(height: 16),
                   Card(
-                    elevation: 1,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -237,8 +236,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: accuracy >= 70
-                                  ? Colors.green.shade700
-                                  : Colors.orange.shade800,
+                                  ? context.appColors.success
+                                  : context.appColors.streak,
                             ),
                           ),
                         ],
@@ -281,13 +280,11 @@ class _ReviewScreenState extends State<ReviewScreen> {
               numberOfParticles: 100,
               gravity: 0.2,
               shouldLoop: false,
-              colors: const [
-                Colors.green,
-                Colors.blue,
-                Colors.pink,
-                Colors.orange,
-                Colors.purple,
-                Colors.amber,
+              colors: [
+                for (var level = 0; level <= 8; level += 2)
+                  boxColor(context.colors, level),
+                context.appColors.success,
+                context.appColors.streak,
               ],
             ),
           ),
@@ -324,7 +321,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
           children: [
             LinearProgressIndicator(
               value: (_currentIndex + 1) / _reviewCards.length,
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: context.colors.surfaceContainerHighest,
               valueColor:
               AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
             ),
@@ -333,7 +330,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
               child: GestureDetector(
                 onTap: _toggleCardFlip,
                 child: Card(
-                  elevation: 4,
+                  elevation: 3,
+                  color: context.colors.surfaceContainerLow,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -349,7 +347,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
-                            color: Colors.grey.shade600,
+                            color: context.colors.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -369,7 +367,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontStyle: FontStyle.italic,
-                            color: Colors.grey.shade500,
+                            color: context.colors.outline,
                           ),
                         ),
                       ],
@@ -385,8 +383,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   Expanded(
                     child: FilledButton.tonal(
                       style: FilledButton.styleFrom(
-                        backgroundColor: Colors.red.shade50,
-                        foregroundColor: Colors.red.shade700,
+                        backgroundColor: context.colors.errorContainer,
+                        foregroundColor: context.colors.onErrorContainer,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       onPressed: () => _onAnswer(false),
@@ -405,7 +403,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   Expanded(
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
+                        backgroundColor: context.appColors.success,
+                        foregroundColor: context.appColors.onSuccess,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       onPressed: () => _onAnswer(true),

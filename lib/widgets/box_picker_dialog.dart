@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 /// Affiche une grille des 9 boîtes et renvoie le niveau choisi (null si annulé).
 Future<int?> showBoxPickerDialog(
@@ -6,7 +7,7 @@ Future<int?> showBoxPickerDialog(
   String title = 'Move Card',
   int? currentLevel,
 }) {
-  final primaryColor = Theme.of(context).colorScheme.primary;
+  final colors = context.colors;
 
   return showDialog<int>(
     context: context,
@@ -21,12 +22,16 @@ Future<int?> showBoxPickerDialog(
           crossAxisSpacing: 10,
           children: List.generate(9, (level) {
             final bool isCurrent = level == currentLevel;
+            final foreground = onBoxColor(colors, level);
 
             return Material(
-              color: isCurrent
-                  ? primaryColor
-                  : primaryColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
+              color: boxColor(colors, level),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: isCurrent
+                    ? BorderSide(color: colors.onSurface, width: 3)
+                    : BorderSide.none,
+              ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(14),
                 onTap: () => Navigator.pop(ctx, isCurrent ? null : level),
@@ -38,14 +43,14 @@ Future<int?> showBoxPickerDialog(
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: isCurrent ? Colors.white : primaryColor,
+                        color: foreground,
                       ),
                     ),
                     Text(
-                      '${1 << level}d',
+                      isCurrent ? 'current' : '${1 << level}d',
                       style: TextStyle(
                         fontSize: 12,
-                        color: isCurrent ? Colors.white70 : Colors.grey.shade700,
+                        color: foreground.withValues(alpha: 0.8),
                       ),
                     ),
                   ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
+import '../theme/app_theme.dart';
 
 class StreakForecastBar extends StatelessWidget {
   final List<Flashcard> cards;
@@ -7,7 +8,6 @@ class StreakForecastBar extends StatelessWidget {
   final Map<String, int> dailyDueHistory;
   final Map<String, int> dailyReviewedCountHistory;
   final bool hasReviewedToday;
-  final int streak;
 
   const StreakForecastBar({
     super.key,
@@ -16,7 +16,6 @@ class StreakForecastBar extends StatelessWidget {
     required this.dailyDueHistory,
     required this.dailyReviewedCountHistory,
     required this.hasReviewedToday,
-    required this.streak,
   });
 
   String _formatDate(DateTime d) {
@@ -49,51 +48,26 @@ class StreakForecastBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final theme = Theme.of(context);
+    final colors = context.colors;
+    final appColors = context.appColors;
 
     final dayOffsets = [-4, -3, -2, -1, 0, 1, 2, 3];
 
     return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Activity',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Activity',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.local_fire_department, size: 18, color: Colors.orange.shade800),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$streak d',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade900,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 16),
             Row(
@@ -106,6 +80,7 @@ class StreakForecastBar extends StatelessWidget {
 
                 int count = 0;
                 Color dotColor;
+                Color textColor;
 
                 if (isPast) {
                   final bool wasReviewed = reviewHistory.contains(dateStr);
@@ -113,10 +88,12 @@ class StreakForecastBar extends StatelessWidget {
                   final int reviewedCount = dailyReviewedCountHistory[dateStr] ?? 0;
 
                   if (wasReviewed || recordedDue == 0) {
-                    dotColor = Colors.green.shade600;
+                    dotColor = appColors.success;
+                    textColor = appColors.onSuccess;
                     count = reviewedCount;
                   } else {
-                    dotColor = Colors.red.shade500;
+                    dotColor = colors.error;
+                    textColor = colors.onError;
                     count = recordedDue;
                   }
                 } else if (isToday) {
@@ -124,15 +101,18 @@ class StreakForecastBar extends StatelessWidget {
                   final int reviewedToday = dailyReviewedCountHistory[dateStr] ?? 0;
 
                   if (hasReviewedToday || dueToday == 0) {
-                    dotColor = Colors.green.shade600;
+                    dotColor = appColors.success;
+                    textColor = appColors.onSuccess;
                     count = reviewedToday;
                   } else {
-                    dotColor = Colors.grey.shade400;
+                    dotColor = colors.surfaceContainerHighest;
+                    textColor = colors.onSurfaceVariant;
                     count = dueToday;
                   }
                 } else {
                   count = _countDueForFutureDate(targetDate);
-                  dotColor = Colors.grey.shade400;
+                  dotColor = colors.surfaceContainerHighest;
+                  textColor = colors.onSurfaceVariant;
                 }
 
                 final label = _getDayLabel(offset, targetDate);
@@ -147,14 +127,14 @@ class StreakForecastBar extends StatelessWidget {
                         color: dotColor,
                         shape: BoxShape.circle,
                         border: isToday
-                            ? Border.all(color: theme.colorScheme.primary, width: 2.5)
+                            ? Border.all(color: colors.primary, width: 2.5)
                             : null,
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         '$count',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: textColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -166,7 +146,7 @@ class StreakForecastBar extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                        color: isToday ? theme.colorScheme.primary : Colors.grey.shade600,
+                        color: isToday ? colors.primary : colors.onSurfaceVariant,
                       ),
                     ),
                   ],

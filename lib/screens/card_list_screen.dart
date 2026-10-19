@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
 import '../services/csv_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/box_picker_dialog.dart';
 import '../widgets/flashcard_tile.dart';
 
@@ -107,7 +108,8 @@ class _CardListScreenState extends State<CardListScreen> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade700,
+              backgroundColor: context.colors.error,
+              foregroundColor: context.colors.onError,
             ),
             onPressed: () {
               Navigator.pop(ctx);
@@ -248,7 +250,7 @@ class _CardListScreenState extends State<CardListScreen> {
         ),
         IconButton(
           icon: Icon(Icons.delete_outline,
-              color: hasSelection ? Colors.red : null),
+              color: hasSelection ? context.colors.error : null),
           tooltip: 'Delete',
           onPressed: hasSelection ? _confirmDeleteSelected : null,
         ),
@@ -323,7 +325,6 @@ class _CardListScreenState extends State<CardListScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      barrierColor: Colors.black.withValues(alpha: 0.25),
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -345,7 +346,7 @@ class _CardListScreenState extends State<CardListScreen> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: context.colors.outlineVariant,
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
@@ -421,13 +422,13 @@ class _CardListScreenState extends State<CardListScreen> {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? primaryColor.withValues(alpha: 0.15)
-                                : Colors.grey.shade100,
+                                : context.colors.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
                             _getSortTypeIcon(type),
                             size: 20,
-                            color: isSelected ? primaryColor : Colors.grey.shade700,
+                            color: isSelected ? primaryColor : context.colors.onSurfaceVariant,
                           ),
                         ),
                         title: Text(
@@ -507,7 +508,7 @@ class _CardListScreenState extends State<CardListScreen> {
                       )
                           : null,
                       filled: true,
-                      fillColor: Colors.grey.withValues(alpha: 0.08),
+                      fillColor: context.colors.surfaceContainer,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide.none,
@@ -559,7 +560,7 @@ class _CardListScreenState extends State<CardListScreen> {
                 widget.cards.isEmpty
                     ? 'No cards created yet.'
                     : 'No cards match your search.',
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(color: context.colors.onSurfaceVariant),
               ),
             )
                 : GridView.builder(

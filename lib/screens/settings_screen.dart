@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(int index)? onThemeChanged;
@@ -63,7 +64,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.red.shade700,
+                backgroundColor: context.colors.error,
+                foregroundColor: context.colors.onError,
               ),
               onPressed: () => Navigator.of(ctx).pop(true),
               child: const Text('Reset Everything'),
@@ -115,10 +117,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 8),
           Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -134,7 +132,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: List.generate(appThemeColors.length, (index) {
                       final color = appThemeColors[index];
                       final isSelected = _selectedColorIndex == index;
-                      final bool isLightColor = color == Colors.yellow;
+                      final bool isLightColor =
+                          ThemeData.estimateBrightnessForColor(color) ==
+                              Brightness.light;
 
                       return GestureDetector(
                         onTap: () => _changeTheme(index),
@@ -145,9 +145,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             color: color,
                             shape: BoxShape.circle,
                             border: isSelected
-                                ? Border.all(color: Colors.black87, width: 3)
+                                ? Border.all(color: context.colors.onSurface, width: 3)
                                 : Border.all(
-                              color: Colors.grey.shade300,
+                              color: context.colors.outlineVariant,
                               width: 1,
                             ),
                           ),
@@ -174,19 +174,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.red.shade700,
+              color: context.colors.error,
             ),
           ),
           const SizedBox(height: 8),
           Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
             child: ListTile(
               leading: Icon(
                 Icons.delete_forever_outlined,
-                color: Colors.red.shade700,
+                color: context.colors.error,
               ),
               title: const Text(
                 'Delete All Data',
@@ -195,7 +191,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: const Text('Reset flashcards, streak and preferences'),
               trailing: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red.shade700,
+                  backgroundColor: context.colors.error,
+                  foregroundColor: context.colors.onError,
                 ),
                 onPressed: _confirmResetData,
                 child: const Text('Reset'),
@@ -215,19 +212,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Created with ',
                       style: TextStyle(
                         fontSize: creditsFontSize,
-                        color: Colors.grey.shade600,
+                        color: context.colors.onSurfaceVariant,
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.favorite_rounded,
                       size: creditsFontSize+1,
-                      color: Colors.redAccent,
+                      color: context.colors.error,
                     ),
                     Text(
                       ' by ',
                       style: TextStyle(
                         fontSize: creditsFontSize,
-                        color: Colors.grey.shade600,
+                        color: context.colors.onSurfaceVariant,
                       ),
                     ),
                     Text(
@@ -245,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'My Memory Box',
                   style: TextStyle(
                     fontSize: creditsFontSize-2,
-                    color: Colors.grey.shade400,
+                    color: context.colors.outline,
                     letterSpacing: 0.5,
                   ),
                 ),

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
+import '../theme/app_theme.dart';
 import '../widgets/flashcard_tile.dart';
 
 class BoxDetailScreen extends StatelessWidget {
@@ -34,7 +35,7 @@ class BoxDetailScreen extends StatelessWidget {
             Icon(
               Icons.inbox_outlined,
               size: 64,
-              color: Colors.grey.shade400,
+              color: context.colors.outline,
             ),
             const SizedBox(height: 16),
             Text(
@@ -42,7 +43,7 @@ class BoxDetailScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey.shade600,
+                color: context.colors.onSurfaceVariant,
               ),
             ),
           ],

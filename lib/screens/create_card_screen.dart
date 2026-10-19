@@ -46,7 +46,8 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primaryColor = theme.colorScheme.primary;
+    final colors = theme.colorScheme;
+    final primaryColor = colors.primary;
 
     return Scaffold(
       appBar: AppBar(
@@ -68,17 +69,17 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                 // --- CARTE PHYSIQUE ---
                 Container(
                   decoration: BoxDecoration(
-                    color: theme.cardColor,
+                    color: colors.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
+                        color: colors.shadow.withValues(alpha: 0.06),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),
                     ],
                     border: Border.all(
-                      color: Colors.grey.withValues(alpha: 0.2),
+                      color: colors.outlineVariant,
                       width: 1.2,
                     ),
                   ),
@@ -120,10 +121,10 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                                 fontWeight: FontWeight.w500,
                                 height: 1.3,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Enter question, term or prompt...',
                                 hintStyle: TextStyle(
-                                  color: Colors.grey,
+                                  color: colors.onSurfaceVariant,
                                   fontWeight: FontWeight.normal,
                                   fontSize: 15,
                                 ),
@@ -147,13 +148,12 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                         children: [
                           Divider(
                             thickness: 1.2,
-                            color: Colors.grey.withValues(alpha: 0.25),
+                            color: colors.outlineVariant,
                             height: 32,
                           ),
                           Material(
-                            color: theme.scaffoldBackgroundColor,
+                            color: colors.surfaceContainerHighest,
                             shape: const CircleBorder(),
-                            elevation: 1,
                             child: InkWell(
                               customBorder: const CircleBorder(),
                               onTap: _swapFrontAndBack,
@@ -180,7 +180,7 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.grey.withValues(alpha: 0.15),
+                                color: colors.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -189,7 +189,7 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.8,
-                                  color: Colors.grey.shade700,
+                                  color: colors.onSurfaceVariant,
                                 ),
                               ),
                             ),
@@ -202,14 +202,14 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w400,
-                                color: Colors.grey.shade800,
+                                color: colors.onSurfaceVariant,
                                 height: 1.3,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText:
                                 'Enter answer, definition or translation...',
                                 hintStyle: TextStyle(
-                                  color: Colors.grey,
+                                  color: colors.onSurfaceVariant,
                                   fontWeight: FontWeight.normal,
                                   fontSize: 15,
                                 ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
+import '../theme/app_theme.dart';
 import 'box_picker_dialog.dart';
+import 'level_badge.dart';
 
 class FlashcardTile extends StatelessWidget {
   final Flashcard card;
@@ -90,7 +92,8 @@ class FlashcardTile extends StatelessWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade700,
+              backgroundColor: context.colors.error,
+              foregroundColor: context.colors.onError,
             ),
             onPressed: () {
               Navigator.pop(ctx);
@@ -130,8 +133,9 @@ class FlashcardTile extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Delete Card', style: TextStyle(color: Colors.red)),
+              leading: Icon(Icons.delete_outline, color: context.colors.error),
+              title: Text('Delete Card',
+                  style: TextStyle(color: context.colors.error)),
               onTap: () {
                 Navigator.pop(ctx);
                 _confirmDelete(context);
@@ -156,19 +160,16 @@ class FlashcardTile extends StatelessWidget {
 
     final bool isDue = daysLeft <= 0;
     final String dueLabel = isDue ? 'Today' : 'in ${daysLeft}d';
-    final Color dueColor = isDue ? Colors.orange.shade800 : Colors.grey.shade600;
-
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final colors = context.colors;
+    final Color dueColor = isDue ? colors.primary : colors.onSurfaceVariant;
 
     return Card(
-      elevation: 1.5,
-      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
-      color: isSelected ? primaryColor.withValues(alpha: 0.12) : null,
+      color: isSelected ? colors.primaryContainer : null,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         side: isSelected
-            ? BorderSide(color: primaryColor, width: 2)
+            ? BorderSide(color: colors.primary, width: 2)
             : BorderSide.none,
       ),
       child: InkWell(
@@ -181,25 +182,14 @@ class FlashcardTile extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CircleAvatar(
-                    radius: 15,
-                    backgroundColor: Colors.indigo,
-                    foregroundColor: Colors.white,
-                    child: Text(
-                      '${card.level}',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  LevelBadge(level: card.level),
                   if (selectionMode)
                     Icon(
                       isSelected
                           ? Icons.check_circle_rounded
                           : Icons.radio_button_unchecked_rounded,
                       size: 22,
-                      color: isSelected ? primaryColor : Colors.grey.shade400,
+                      color: isSelected ? colors.primary : colors.outline,
                     )
                   else
                     Text(
@@ -229,7 +219,7 @@ class FlashcardTile extends StatelessWidget {
                   ),
                 ),
               ),
-              Divider(height: 6, thickness: 0.8, color: Colors.grey.shade300),
+              Divider(height: 6, thickness: 0.8, color: colors.outlineVariant),
               Expanded(
                 child: Align(
                   alignment: Alignment.center,
@@ -239,7 +229,7 @@ class FlashcardTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: cardFontSize,
                       height: 1.15,
-                      color: Colors.grey.shade700,
+                      color: colors.onSurfaceVariant,
                     ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,

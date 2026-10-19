@@ -8,6 +8,7 @@ class StorageService {
   static const String _reviewHistoryKey = 'daily_review_history';
   static const String _dailyDueHistoryKey = 'daily_due_history';
   static const String _dailyReviewedCountKey = 'daily_reviewed_count';
+  static const String _dailyCorrectCountKey = 'daily_correct_count';
   static const String _streakCountKey = 'streak_count';
   static const String _lastStreakDateKey = 'last_streak_date';
   static const String _themeColorIndexKey = 'theme_color_index';
@@ -86,6 +87,24 @@ class StorageService {
     final history = await getDailyReviewedCountHistory();
     history[formattedDate] = (history[formattedDate] ?? 0) + count;
     await prefs.setString(_dailyReviewedCountKey, jsonEncode(history));
+  }
+
+  Future<Map<String, int>> getDailyCorrectCountHistory() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? rawJson = prefs.getString(_dailyCorrectCountKey);
+    if (rawJson == null || rawJson.isEmpty) {
+      return {};
+    }
+    final Map<String, dynamic> decoded = jsonDecode(rawJson) as Map<String, dynamic>;
+    return decoded.map((key, value) => MapEntry(key, value as int));
+  }
+
+  Future<void> saveDailyCorrectCount(DateTime date, int count) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String formattedDate = _formatDate(date);
+    final history = await getDailyCorrectCountHistory();
+    history[formattedDate] = (history[formattedDate] ?? 0) + count;
+    await prefs.setString(_dailyCorrectCountKey, jsonEncode(history));
   }
 
   Future<int> getStreak() async {

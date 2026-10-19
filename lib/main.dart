@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'services/storage_service.dart';
+import 'theme/app_theme.dart';
 
 const List<Color> appThemeColors = [
   Colors.deepPurple,
@@ -55,20 +56,8 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'My Memory Box',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: primaryColor,
-          brightness: Brightness.light,
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: primaryColor,
-          brightness: Brightness.dark,
-        ),
-      ),
+      theme: buildAppTheme(primaryColor, Brightness.light),
+      darkTheme: buildAppTheme(primaryColor, Brightness.dark),
       home: HomeScreen(
         onThemeChanged: updateThemeColor,
       ),
