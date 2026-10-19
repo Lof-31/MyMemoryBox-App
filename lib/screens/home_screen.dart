@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
 import '../services/storage_service.dart';
-import '../services/notification_service.dart';
 import '../widgets/level_card.dart';
 import '../widgets/streak_forecast_bar.dart';
 import 'create_card_screen.dart';
@@ -24,7 +23,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final StorageService _storageService = StorageService();
-  final NotificationService _notificationService = NotificationService();
 
   List<Flashcard> _cards = [];
   List<String> _reviewHistory = [];
@@ -105,8 +103,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _hasReviewedToday = (lastReviewDateStr == todayStr);
       _isLoading = false;
     });
-
-    await _notificationService.syncDailyReminder(_cards);
   }
 
   Future<void> _deleteCard(String id) async {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/storage_service.dart';
-import '../services/notification_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(int index)? onThemeChanged;
@@ -19,9 +18,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final StorageService _storageService = StorageService();
-  final NotificationService _notificationService = NotificationService();
 
-  TimeOfDay _reminderTime = const TimeOfDay(hour: 9, minute: 0);
   int _selectedColorIndex = 0;
   bool _isLoading = true;
 
@@ -32,138 +29,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final time = await _storageService.getReminderTime();
     final colorIndex = await _storageService.getThemeColorIndex();
     setState(() {
-      _reminderTime = time;
       _selectedColorIndex =
       (colorIndex < appThemeColors.length) ? colorIndex : 0;
       _isLoading = false;
     });
-  }
-
-  Future<void> _selectTime() async {
-    int selectedHour = _reminderTime.hour;
-    int selectedMinuteIndex = (_reminderTime.minute / 5).round() % 12;
-
-    final FixedExtentScrollController hourController =
-    FixedExtentScrollController(initialItem: selectedHour);
-    final FixedExtentScrollController minuteController =
-    FixedExtentScrollController(initialItem: selectedMinuteIndex);
-
-    final TimeOfDay? picked = await showDialog<TimeOfDay>(
-      context: context,
-      builder: (BuildContext ctx) {
-        final colorScheme = Theme.of(ctx).colorScheme;
-
-        return AlertDialog(
-          title: const Center(
-            child: Text(
-              'Set Reminder Time',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-          ),
-          content: SizedBox(
-            height: 180,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 65,
-                  child: ListWheelScrollView.useDelegate(
-                    controller: hourController,
-                    itemExtent: 44,
-                    physics: const FixedExtentScrollPhysics(),
-                    perspective: 0.005,
-                    diameterRatio: 1.2,
-                    onSelectedItemChanged: (index) {
-                      selectedHour = index;
-                    },
-                    childDelegate: ListWheelChildBuilderDelegate(
-                      childCount: 24,
-                      builder: (context, index) {
-                        return Center(
-                          child: Text(
-                            index.toString().padLeft(2, '0'),
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    ':',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                SizedBox(
-                  width: 65,
-                  child: ListWheelScrollView.useDelegate(
-                    controller: minuteController,
-                    itemExtent: 44,
-                    physics: const FixedExtentScrollPhysics(),
-                    perspective: 0.005,
-                    diameterRatio: 1.2,
-                    onSelectedItemChanged: (index) {
-                      selectedMinuteIndex = index;
-                    },
-                    childDelegate: ListWheelChildBuilderDelegate(
-                      childCount: 12,
-                      builder: (context, index) {
-                        final int minuteValue = index * 5;
-                        return Center(
-                          child: Text(
-                            minuteValue.toString().padLeft(2, '0'),
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(null),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(ctx).pop(
-                  TimeOfDay(
-                    hour: selectedHour,
-                    minute: selectedMinuteIndex * 5,
-                  ),
-                );
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (picked != null && picked != _reminderTime) {
-      setState(() {
-        _reminderTime = picked;
-      });
-      await _storageService.saveReminderTime(picked);
-      final cards = await _storageService.loadCards();
-      await _notificationService.syncDailyReminder(cards);
-    }
   }
 
   Future<void> _changeTheme(int index) async {
@@ -204,7 +75,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (isConfirmed == true) {
       await _storageService.clearAllData();
-      await _notificationService.cancelAllNotifications();
       await _loadSettings();
       if (widget.onDataReset != null) {
         widget.onDataReset!();
@@ -295,34 +165,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     }),
                   ),
                 ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Notifications',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: primaryColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              leading: Icon(Icons.alarm, color: primaryColor),
-              title: const Text('Daily Reminder Time'),
-              subtitle: const Text('Choose when to be reminded for reviews'),
-              trailing: FilledButton.tonal(
-                onPressed: _selectTime,
-                child: Text(
-                  _reminderTime.format(context),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
               ),
             ),
           ),

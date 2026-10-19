@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
-import 'services/notification_service.dart';
 import 'services/storage_service.dart';
 
 const List<Color> appThemeColors = [
@@ -12,9 +11,7 @@ const List<Color> appThemeColors = [
   Colors.red,
 ];
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService().initialize();
+void main() {
   runApp(const MyApp());
 }
 
