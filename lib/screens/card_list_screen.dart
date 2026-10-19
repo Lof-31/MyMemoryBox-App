@@ -298,13 +298,13 @@ class _CardListScreenState extends State<CardListScreen> {
   String _getSortTypeLabel(CardSortType type) {
     switch (type) {
       case CardSortType.reviewDate:
-        return 'Date de révision';
+        return 'Review date';
       case CardSortType.boxLevel:
-        return 'Niveau de boîte';
+        return 'Box level';
       case CardSortType.alphabetical:
-        return 'Ordre alphabétique';
+        return 'Alphabetical';
       case CardSortType.creationDate:
-        return 'Date de création';
+        return 'Creation date';
     }
   }
 
@@ -358,7 +358,7 @@ class _CardListScreenState extends State<CardListScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Trier par',
+                        'Sort by',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -369,12 +369,12 @@ class _CardListScreenState extends State<CardListScreen> {
                           ButtonSegment<bool>(
                             value: true,
                             icon: Icon(Icons.arrow_upward_rounded, size: 16),
-                            label: Text('Croissant', style: TextStyle(fontSize: 12)),
+                            label: Text('Ascending', style: TextStyle(fontSize: 12)),
                           ),
                           ButtonSegment<bool>(
                             value: false,
                             icon: Icon(Icons.arrow_downward_rounded, size: 16),
-                            label: Text('Décroissant', style: TextStyle(fontSize: 12)),
+                            label: Text('Descending', style: TextStyle(fontSize: 12)),
                           ),
                         ],
                         selected: {_isAscending},
@@ -492,6 +492,24 @@ class _CardListScreenState extends State<CardListScreen> {
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
             child: Row(
               children: [
+                // Nombre total de cartes, symétrique au bouton de tri
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    '${widget.cards.length} ${widget.cards.length == 1 ? 'card' : 'cards'}',
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 20 / 15,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     decoration: InputDecoration(

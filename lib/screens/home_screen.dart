@@ -13,10 +13,7 @@ import 'settings_screen.dart';
 class HomeScreen extends StatefulWidget {
   final Function(int index)? onThemeChanged;
 
-  const HomeScreen({
-    super.key,
-    this.onThemeChanged,
-  });
+  const HomeScreen({super.key, this.onThemeChanged});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -65,10 +62,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final history = await _storageService.getReviewHistory();
     final streak = await _storageService.getStreak();
     final dueHistory = await _storageService.getDailyDueHistory();
-    final reviewedCountHistory =
-    await _storageService.getDailyReviewedCountHistory();
-    final correctCountHistory =
-    await _storageService.getDailyCorrectCountHistory();
+    final reviewedCountHistory = await _storageService
+        .getDailyReviewedCountHistory();
+    final correctCountHistory = await _storageService
+        .getDailyCorrectCountHistory();
 
     final DateTime now = DateTime.now();
     final DateTime today = DateTime(now.year, now.month, now.day);
@@ -130,7 +127,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _moveCards(Set<String> ids, int level) async {
     final updatedList = _cards
-        .map((c) => ids.contains(c.id) && c.level != level ? c.moveTo(level) : c)
+        .map(
+          (c) => ids.contains(c.id) && c.level != level ? c.moveTo(level) : c,
+        )
         .toList();
     await _storageService.saveCards(updatedList);
     _loadData();
@@ -158,10 +157,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final result = await Navigator.push<List<Flashcard>>(
       context,
       MaterialPageRoute(
-        builder: (context) => ReviewScreen(
-          level: 0,
-          cards: _dueCards,
-        ),
+        builder: (context) => ReviewScreen(level: 0, cards: _dueCards),
       ),
     );
 
@@ -176,10 +172,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       await _storageService.saveCards(updatedList);
       await _storageService.saveLastDailyReviewDate(DateTime.now());
       await _storageService.saveDailyReviewedCount(
-          DateTime.now(), sessionCardCount);
+        DateTime.now(),
+        sessionCardCount,
+      );
       // Une carte réussie monte d'au moins une boîte, une carte ratée retombe en boîte 0
       await _storageService.saveDailyCorrectCount(
-          DateTime.now(), result.where((c) => c.level > 0).length);
+        DateTime.now(),
+        result.where((c) => c.level > 0).length,
+      );
       await _storageService.incrementStreak(DateTime.now());
     }
     _loadData();
@@ -188,9 +188,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _openCreateCard() async {
     final newCard = await Navigator.push<Flashcard>(
       context,
-      MaterialPageRoute(
-        builder: (context) => const CreateCardScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const CreateCardScreen()),
     );
 
     if (newCard != null) {
@@ -236,53 +234,49 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildBoxesView() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Boxes'),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  children: List.generate(9, (index) {
-                    final levelCards =
-                    _cards.where((c) => c.level == index).toList();
-                    final dueCount = _hasReviewedToday
-                        ? 0
-                        : levelCards.where((c) => c.isDue).length;
+    final countByLevel = List.generate(
+      9,
+      (level) => _cards.where((c) => c.level == level).length,
+    );
+    final int maxCards = countByLevel.reduce((a, b) => a > b ? a : b);
 
-                    return Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(bottom: index < 8 ? 6 : 0),
-                        child: LevelCard(
+    return Scaffold(
+      appBar: AppBar(title: const Text('My Boxes')),
+      // Les 9 boîtes se partagent toute la hauteur disponible, sans défilement
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: List.generate(9, (index) {
+            final dueCount = _hasReviewedToday
+                ? 0
+                : _cards.where((c) => c.level == index && c.isDue).length;
+
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: index < 8 ? 8 : 0),
+                child: LevelCard(
+                  level: index,
+                  totalCards: countByLevel[index],
+                  maxCards: maxCards,
+                  dueCount: dueCount,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BoxDetailScreen(
                           level: index,
-                          totalCards: levelCards.length,
-                          dueCount: dueCount,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => BoxDetailScreen(
-                                  level: index,
-                                  cards: _cards,
-                                  onDelete: _deleteCard,
-                                  onEdit: _editCard,
-                                ),
-                              ),
-                            );
-                          },
+                          cards: _cards,
+                          onDelete: _deleteCard,
+                          onEdit: _editCard,
                         ),
                       ),
                     );
-                  }),
+                  },
                 ),
               ),
-            ],
-          ),
+            );
+          }),
         ),
       ),
     );
@@ -291,9 +285,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final List<Widget> pages = [
@@ -316,20 +308,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final bool shouldShowFab = _currentNavIndex == 0 || _currentNavIndex == 1;
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentNavIndex,
-        children: pages,
-      ),
+      body: IndexedStack(index: _currentNavIndex, children: pages),
       floatingActionButton: shouldShowFab
           ? FloatingActionButton.extended(
-        heroTag: 'fab_main_new_card',
-        onPressed: _openCreateCard,
-        icon: const Icon(Icons.add),
-        label: const Text(
-          'New Card',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-      )
+              heroTag: 'fab_main_new_card',
+              onPressed: _openCreateCard,
+              icon: const Icon(Icons.add),
+              label: const Text(
+                'New Card',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            )
           : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentNavIndex,

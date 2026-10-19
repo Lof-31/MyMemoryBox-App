@@ -3,21 +3,22 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'level_badge.dart';
 
+/// Ligne d'une boîte dans My Boxes : intervalle, barre de remplissage
+/// proportionnelle à la boîte la plus remplie, et cartes à revoir.
 class LevelCard extends StatelessWidget {
   final int level;
   final int totalCards;
+
+  /// Nombre de cartes de la boîte la plus remplie, qui sert de longueur pleine à la barre.
+  final int maxCards;
   final int dueCount;
   final VoidCallback? onTap;
-
-  static const double boxTitleFontSize = 16;
-  static const double intervalFontSize = 15;
-  static const double cardCountFontSize = 16;
-  static const double dueBadgeFontSize = 14;
 
   const LevelCard({
     super.key,
     required this.level,
     required this.totalCards,
+    required this.maxCards,
     required this.dueCount,
     this.onTap,
   });
@@ -25,86 +26,104 @@ class LevelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int intervalDays = pow(2, level).toInt();
-    final bool hasDue = dueCount > 0;
+    final bool isEmpty = totalCards == 0;
     final colors = context.colors;
-    final appColors = context.appColors;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Row(
-            children: [
-              LevelBadge(level: level),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Row(
-                  children: [
-                    Text(
-                      'Box $level',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: boxTitleFontSize,
+    return Opacity(
+      // Les boîtes vides restent visibles mais passent au second plan
+      opacity: isEmpty ? 0.5 : 1,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            child: Row(
+              children: [
+                LevelBadge(level: level, size: 34),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            intervalDays == 1
+                                ? 'Every day'
+                                : 'Every $intervalDays days',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (dueCount > 0) ...[
+                            _DueBadge(count: dueCount),
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            '$totalCards ${totalCards == 1 ? 'card' : 'cards'}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '(${intervalDays}d)',
-                      style: TextStyle(
-                        fontSize: intervalFontSize,
-                        color: colors.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: maxCards == 0 ? 0 : totalCards / maxCards,
+                          minHeight: 8,
+                          backgroundColor: colors.surfaceContainerHighest,
+                          color: boxColor(colors, level),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Text(
-                '$totalCards ${totalCards == 1 ? 'card' : 'cards'}',
-                style: TextStyle(
-                  fontSize: cardCountFontSize,
-                  color: colors.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: hasDue
-                      ? colors.primaryContainer
-                      : appColors.successContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      hasDue ? Icons.alarm : Icons.check_circle_outline,
-                      size: 16,
-                      color: hasDue
-                          ? colors.onPrimaryContainer
-                          : appColors.onSuccessContainer,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$dueCount',
-                      style: TextStyle(
-                        fontSize: dueBadgeFontSize,
-                        fontWeight: FontWeight.bold,
-                        color: hasDue
-                            ? colors.onPrimaryContainer
-                            : appColors.onSuccessContainer,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DueBadge extends StatelessWidget {
+  final int count;
+
+  const _DueBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.alarm, size: 14, color: colors.onPrimaryContainer),
+          const SizedBox(width: 3),
+          Text(
+            '$count due',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: colors.onPrimaryContainer,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -114,7 +114,7 @@ Color boxColor(ColorScheme colorScheme, int level) {
   final t = level.clamp(0, 8) / 8;
   final bool isDark = colorScheme.brightness == Brightness.dark;
   final lightness = isDark ? 0.30 + 0.45 * t : 0.80 - 0.52 * t;
-  final saturation = hsl.saturation < 0.45 ? 0.45 : hsl.saturation;
+  final saturation = hsl.saturation < 0.55 ? 0.55 : hsl.saturation;
   return hsl.withLightness(lightness).withSaturation(saturation).toColor();
 }
 
