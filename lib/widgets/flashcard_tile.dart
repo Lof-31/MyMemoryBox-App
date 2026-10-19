@@ -63,6 +63,69 @@ class FlashcardTile extends StatelessWidget {
     );
   }
 
+  void _showMoveDialog(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Move Card'),
+        content: SizedBox(
+          width: 260,
+          child: GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            children: List.generate(9, (level) {
+              final bool isCurrent = level == card.level;
+
+              return Material(
+                color: isCurrent
+                    ? primaryColor
+                    : primaryColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    if (!isCurrent) onEdit(card.moveTo(level));
+                  },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '$level',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: isCurrent ? Colors.white : primaryColor,
+                        ),
+                      ),
+                      Text(
+                        '${1 << level}d',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isCurrent ? Colors.white70 : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
@@ -105,6 +168,14 @@ class FlashcardTile extends StatelessWidget {
               onTap: () {
                 Navigator.pop(ctx);
                 _showEditDialog(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.drive_file_move_outlined),
+              title: const Text('Move Card'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showMoveDialog(context);
               },
             ),
             ListTile(

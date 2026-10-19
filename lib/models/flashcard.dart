@@ -78,6 +78,14 @@ class Flashcard {
     );
   }
 
+  Flashcard moveTo(int newLevel) {
+    final now = DateTime.now();
+    final nextDate = DateTime(now.year, now.month, now.day)
+        .add(Duration(days: pow(2, newLevel).toInt()));
+
+    return copyWith(level: newLevel, nextReviewDate: nextDate);
+  }
+
   Flashcard copyWith({
     String? frontText,
     String? backText,
