@@ -110,9 +110,13 @@ class StorageService {
     await prefs.setString(_dailyCorrectCountKey, jsonEncode(history));
   }
 
-  Future<int> getStreak() async {
+  /// Returns the current streak, resetting it if a day was missed.
+  ///
+  /// Days for which [isFreeDay] returns true (nothing was due) count as
+  /// reviewed: they extend a running streak instead of breaking it.
+  Future<int> getStreak({bool Function(DateTime day)? isFreeDay}) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final int streak = prefs.getInt(_streakCountKey) ?? 0;
+    int streak = prefs.getInt(_streakCountKey) ?? 0;
     final String? lastDateStr = prefs.getString(_lastStreakDateKey);
 
     if (lastDateStr == null) {
@@ -121,7 +125,22 @@ class StorageService {
 
     final DateTime now = DateTime.now();
     final DateTime today = DateTime(now.year, now.month, now.day);
-    final DateTime lastDate = DateTime.parse(lastDateStr);
+    DateTime lastDate = DateTime.parse(lastDateStr);
+
+    if (isFreeDay != null && streak > 0) {
+      final DateTime start = lastDate;
+      DateTime day = DateTime(lastDate.year, lastDate.month, lastDate.day + 1);
+      while (!day.isAfter(today) && isFreeDay(day)) {
+        streak++;
+        lastDate = day;
+        day = DateTime(day.year, day.month, day.day + 1);
+      }
+      if (lastDate != start) {
+        await prefs.setInt(_streakCountKey, streak);
+        await prefs.setString(_lastStreakDateKey, _formatDate(lastDate));
+      }
+    }
+
     final int diffInDays = daysBetween(lastDate, today);
 
     if (diffInDays > 1) {

@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.VIBRATE"/>
     <application
-        android:label="my_memory_box_app"
+        android:label="My Memory Box"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

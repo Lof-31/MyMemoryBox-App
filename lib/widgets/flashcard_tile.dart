@@ -7,6 +7,8 @@ import 'level_badge.dart';
 
 class FlashcardTile extends StatelessWidget {
   final Flashcard card;
+  /// All saved cards, used to refuse an edit that would create a duplicate.
+  final List<Flashcard> allCards;
   final Function(String id) onDelete;
   final Function(Flashcard card) onEdit;
 
@@ -21,6 +23,7 @@ class FlashcardTile extends StatelessWidget {
   const FlashcardTile({
     super.key,
     required this.card,
+    required this.allCards,
     required this.onDelete,
     required this.onEdit,
     this.selectionMode = false,
@@ -36,50 +39,10 @@ class FlashcardTile extends StatelessWidget {
   }
 
   void _showEditDialog(BuildContext context) {
-    final frontCtrl = TextEditingController(text: card.frontText);
-    final backCtrl = TextEditingController(text: card.backText);
-
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit Card'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: frontCtrl,
-              decoration: const InputDecoration(labelText: 'Front Text'),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: backCtrl,
-              decoration: const InputDecoration(labelText: 'Back Text'),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (frontCtrl.text.trim().isNotEmpty &&
-                  backCtrl.text.trim().isNotEmpty) {
-                final updated = card.copyWith(
-                  frontText: frontCtrl.text.trim(),
-                  backText: backCtrl.text.trim(),
-                );
-                onEdit(updated);
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (ctx) =>
+          _EditCardDialog(card: card, allCards: allCards, onEdit: onEdit),
     );
   }
 
@@ -241,6 +204,95 @@ class FlashcardTile extends StatelessWidget {
           status,
         ],
       ),
+    );
+  }
+}
+
+/// Owns its text controllers so they are disposed when the dialog closes
+/// (after its exit animation, not while the fields are still on screen).
+class _EditCardDialog extends StatefulWidget {
+  final Flashcard card;
+  final List<Flashcard> allCards;
+  final Function(Flashcard card) onEdit;
+
+  const _EditCardDialog({
+    required this.card,
+    required this.allCards,
+    required this.onEdit,
+  });
+
+  @override
+  State<_EditCardDialog> createState() => _EditCardDialogState();
+}
+
+class _EditCardDialogState extends State<_EditCardDialog> {
+  late final TextEditingController _frontCtrl =
+      TextEditingController(text: widget.card.frontText);
+  late final TextEditingController _backCtrl =
+      TextEditingController(text: widget.card.backText);
+  String? _duplicateError;
+
+  @override
+  void dispose() {
+    _frontCtrl.dispose();
+    _backCtrl.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (_frontCtrl.text.trim().isEmpty || _backCtrl.text.trim().isEmpty) {
+      return;
+    }
+    if (Flashcard.existsIn(
+      widget.allCards,
+      _frontCtrl.text,
+      _backCtrl.text,
+      exceptId: widget.card.id,
+    )) {
+      setState(() => _duplicateError = 'This card already exists');
+      return;
+    }
+    final updated = widget.card.copyWith(
+      frontText: _frontCtrl.text.trim(),
+      backText: _backCtrl.text.trim(),
+    );
+    widget.onEdit(updated);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit Card'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _frontCtrl,
+            decoration: const InputDecoration(labelText: 'Front Text'),
+            maxLines: 2,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _backCtrl,
+            decoration: InputDecoration(
+              labelText: 'Back Text',
+              errorText: _duplicateError,
+            ),
+            maxLines: 2,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _save,
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }

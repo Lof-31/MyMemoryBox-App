@@ -3,7 +3,10 @@ import 'package:uuid/uuid.dart';
 import '../models/flashcard.dart';
 
 class CreateCardScreen extends StatefulWidget {
-  const CreateCardScreen({super.key});
+  /// Cards already saved, used to refuse duplicates.
+  final List<Flashcard> existingCards;
+
+  const CreateCardScreen({super.key, this.existingCards = const []});
 
   @override
   State<CreateCardScreen> createState() => _CreateCardScreenState();
@@ -215,6 +218,13 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Please enter the back text';
+                                }
+                                if (Flashcard.existsIn(
+                                  widget.existingCards,
+                                  _frontController.text,
+                                  value,
+                                )) {
+                                  return 'This card already exists';
                                 }
                                 return null;
                               },

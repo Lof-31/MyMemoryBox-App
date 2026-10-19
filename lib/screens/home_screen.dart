@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isLoading = true;
   bool _hasReviewedToday = false;
   int _currentNavIndex = 0;
+  bool _isSelectingCards = false;
 
   @override
   void initState() {
@@ -63,7 +64,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final cards = await _storageService.loadCards();
     final lastReviewDateStr = await _storageService.getLastDailyReviewDate();
     final history = await _storageService.getReviewHistory();
-    final streak = await _storageService.getStreak();
     final dueHistory = await _storageService.getDailyDueHistory();
     final reviewedCountHistory = await _storageService
         .getDailyReviewedCountHistory();
@@ -74,22 +74,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final DateTime today = DateTime(now.year, now.month, now.day);
     final String todayStr = _formatDate(today);
 
+    int cumulativeDueOn(DateTime day) => cards.where((c) {
+          final rDate = DateTime(
+            c.nextReviewDate.year,
+            c.nextReviewDate.month,
+            c.nextReviewDate.day,
+          );
+          return !rDate.isAfter(day);
+        }).length;
+
     for (int offset = -4; offset < 0; offset++) {
       final pastDate = DateTime(today.year, today.month, today.day + offset);
       final pastDateStr = _formatDate(pastDate);
 
-      final int cumulativeDue = cards.where((c) {
-        final rDate = DateTime(
-          c.nextReviewDate.year,
-          c.nextReviewDate.month,
-          c.nextReviewDate.day,
-        );
-        return rDate.isBefore(pastDate) || rDate.isAtSameMomentAs(pastDate);
-      }).length;
-
       if (!dueHistory.containsKey(pastDateStr) ||
           dueHistory[pastDateStr] == 0) {
-        dueHistory[pastDateStr] = cumulativeDue;
+        dueHistory[pastDateStr] = cumulativeDueOn(pastDate);
       }
     }
 
@@ -97,6 +97,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     dueHistory[todayStr] = todayDue;
 
     await _storageService.saveDailyDueHistory(dueHistory);
+
+    // Same rule as the Activity bar: a day with nothing due counts as done.
+    final streak = await _storageService.getStreak(
+      isFreeDay: (day) =>
+          (dueHistory[_formatDate(day)] ?? cumulativeDueOn(day)) == 0,
+    );
 
     setState(() {
       _cards = cards;
@@ -140,8 +146,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<int> _importCards(List<Flashcard> imported) async {
-    String key(Flashcard c) =>
-        '${c.frontText.trim().toLowerCase()}\u0000${c.backText.trim().toLowerCase()}';
+    String key(Flashcard c) => Flashcard.duplicateKey(c.frontText, c.backText);
 
     final existingKeys = _cards.map(key).toSet();
     final newCards = imported.where((c) => existingKeys.add(key(c))).toList();
@@ -159,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final result = await Navigator.push<List<Flashcard>>(
       context,
       MaterialPageRoute(
-        builder: (context) => ReviewScreen(level: 0, cards: _dueCards),
+        builder: (context) => ReviewScreen(cards: _dueCards),
       ),
     );
 
@@ -194,7 +199,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _openCreateCard() async {
     final newCard = await Navigator.push<Flashcard>(
       context,
-      MaterialPageRoute(builder: (context) => const CreateCardScreen()),
+      MaterialPageRoute(
+        builder: (context) => CreateCardScreen(existingCards: _cards),
+      ),
     );
 
     if (newCard != null) {
@@ -300,6 +307,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onEdit: _editCard,
         onDeleteMany: _deleteCards,
         onMoveMany: _moveCards,
+        isActive: _currentNavIndex == 1,
+        onSelectionModeChanged: (selecting) =>
+            setState(() => _isSelectingCards = selecting),
       ),
       _buildBoxesView(),
       SettingsScreen(
@@ -311,7 +321,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
     ];
 
-    final bool shouldShowFab = _currentNavIndex == 0 || _currentNavIndex == 1;
+    final bool shouldShowFab = _currentNavIndex == 0 ||
+        (_currentNavIndex == 1 && !_isSelectingCards);
 
     return Scaffold(
       body: IndexedStack(index: _currentNavIndex, children: pages),
@@ -331,6 +342,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onDestinationSelected: (int index) {
           setState(() {
             _currentNavIndex = index;
+            // Leaving My Cards ends its selection mode (see CardListScreen).
+            if (index != 1) _isSelectingCards = false;
           });
         },
         destinations: const [

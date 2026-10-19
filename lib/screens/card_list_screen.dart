@@ -19,6 +19,10 @@ class CardListScreen extends StatefulWidget {
   final Function(Set<String> ids) onDeleteMany;
   final Function(Set<String> ids, int level) onMoveMany;
 
+  /// False while another tab is shown: selection mode is then left.
+  final bool isActive;
+  final ValueChanged<bool>? onSelectionModeChanged;
+
   const CardListScreen({
     super.key,
     required this.cards,
@@ -26,6 +30,8 @@ class CardListScreen extends StatefulWidget {
     required this.onEdit,
     required this.onDeleteMany,
     required this.onMoveMany,
+    this.isActive = true,
+    this.onSelectionModeChanged,
   });
 
   @override
@@ -43,9 +49,15 @@ class _CardListScreenState extends State<CardListScreen> {
   static const int _dueFilter = -1;
   int? _filter;
 
+  void _setSelecting(bool value) {
+    if (_isSelecting == value) return;
+    _isSelecting = value;
+    widget.onSelectionModeChanged?.call(value);
+  }
+
   void _startSelectionWith(String id) {
     setState(() {
-      _isSelecting = true;
+      _setSelecting(true);
       _selectedIds.add(id);
     });
   }
@@ -61,11 +73,17 @@ class _CardListScreenState extends State<CardListScreen> {
     super.didUpdateWidget(oldWidget);
     final existingIds = widget.cards.map((c) => c.id).toSet();
     _selectedIds.retainWhere(existingIds.contains);
+
+    // The parent already knows the tab changed, so it isn't notified here.
+    if (oldWidget.isActive && !widget.isActive) {
+      _isSelecting = false;
+      _selectedIds.clear();
+    }
   }
 
   void _exitSelection() {
     setState(() {
-      _isSelecting = false;
+      _setSelecting(false);
       _selectedIds.clear();
     });
   }
@@ -145,7 +163,7 @@ class _CardListScreenState extends State<CardListScreen> {
             tooltip: 'Select cards',
             onPressed: widget.cards.isEmpty
                 ? null
-                : () => setState(() => _isSelecting = true),
+                : () => setState(() => _setSelecting(true)),
           ),
         ],
       );
@@ -409,6 +427,7 @@ class _CardListScreenState extends State<CardListScreen> {
   Widget _buildTile(Flashcard card) {
     return FlashcardTile(
       card: card,
+      allCards: widget.cards,
       onDelete: widget.onDelete,
       onEdit: widget.onEdit,
       selectionMode: _isSelecting,

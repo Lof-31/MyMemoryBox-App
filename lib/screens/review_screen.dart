@@ -8,12 +8,10 @@ import '../theme/app_theme.dart';
 import '../widgets/review_card.dart';
 
 class ReviewScreen extends StatefulWidget {
-  final int level;
   final List<Flashcard> cards;
 
   const ReviewScreen({
     super.key,
-    required this.level,
     required this.cards,
   });
 

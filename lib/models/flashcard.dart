@@ -19,7 +19,25 @@ class Flashcard {
 
   String get promptText => isReversed ? backText : frontText;
   String get answerText => isReversed ? frontText : backText;
-  int get intervalInDays => pow(2, level).toInt();
+
+  /// Cards with the same front and back (ignoring case and surrounding
+  /// spaces) are duplicates.
+  static String duplicateKey(String front, String back) =>
+      '${front.trim().toLowerCase()}\u0000${back.trim().toLowerCase()}';
+
+  /// Whether [cards] already holds a card with this front and back, other
+  /// than the card [exceptId] (the one being edited).
+  static bool existsIn(
+    Iterable<Flashcard> cards,
+    String front,
+    String back, {
+    String? exceptId,
+  }) {
+    final key = duplicateKey(front, back);
+    return cards.any(
+      (c) => c.id != exceptId && duplicateKey(c.frontText, c.backText) == key,
+    );
+  }
 
   bool get isDue {
     final now = DateTime.now();

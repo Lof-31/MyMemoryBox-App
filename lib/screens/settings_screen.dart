@@ -90,7 +90,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         mimeType: 'text/csv',
       );
       if (saved != null) {
-        _showMessage('${widget.cards.length} cards exported.');
+        final count = widget.cards.length;
+        _showMessage('$count card${count > 1 ? 's' : ''} exported.');
       }
     } catch (e) {
       debugPrint('Error exporting cards: $e');
@@ -305,7 +306,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading: Icon(Icons.file_download_outlined, color: primaryColor),
                   title: const Text('Export cards'),
                   subtitle: Text(
-                    'Save all ${widget.cards.length} cards to a CSV file',
+                    widget.cards.length == 1
+                        ? 'Save your card to a CSV file'
+                        : 'Save all ${widget.cards.length} cards to a CSV file',
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _exportCards,

@@ -63,6 +63,7 @@ class BoxDetailScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 return FlashcardTile(
                   card: boxCards[index],
+                  allCards: cards,
                   onDelete: onDelete,
                   onEdit: onEdit,
                 );

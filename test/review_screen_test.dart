@@ -21,7 +21,7 @@ void main() {
             result = await Navigator.push<List<Flashcard>>(
               context,
               MaterialPageRoute(
-                builder: (_) => ReviewScreen(level: 0, cards: cards),
+                builder: (_) => ReviewScreen(cards: cards),
               ),
             );
           },
