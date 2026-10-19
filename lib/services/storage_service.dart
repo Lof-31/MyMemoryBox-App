@@ -12,6 +12,7 @@ class StorageService {
   static const String _streakCountKey = 'streak_count';
   static const String _lastStreakDateKey = 'last_streak_date';
   static const String _themeColorIndexKey = 'theme_color_index';
+  static const String _cardsListViewKey = 'cards_list_view';
 
   Future<List<Flashcard>> loadCards() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -141,6 +142,16 @@ class StorageService {
     final int currentStreak = await getStreak();
     await prefs.setInt(_streakCountKey, currentStreak + 1);
     await prefs.setString(_lastStreakDateKey, formattedDate);
+  }
+
+  Future<bool> getCardsListView() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_cardsListViewKey) ?? false;
+  }
+
+  Future<void> saveCardsListView(bool isListView) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_cardsListViewKey, isListView);
   }
 
   Future<int> getThemeColorIndex() async {

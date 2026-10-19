@@ -14,6 +14,12 @@ class FlashcardTile extends StatelessWidget {
   final bool isSelected;
   final VoidCallback? onSelectToggle;
 
+  // Appui long : entre en mode sélection avec cette carte cochée
+  final VoidCallback? onLongPress;
+
+  // Affichage en ligne (vue liste) au lieu d'une tuile de grille
+  final bool compact;
+
   static const double cardFontSize = 14.0;
 
   const FlashcardTile({
@@ -24,7 +30,16 @@ class FlashcardTile extends StatelessWidget {
     this.selectionMode = false,
     this.isSelected = false,
     this.onSelectToggle,
+    this.onLongPress,
+    this.compact = false,
   });
+
+  /// Échéance lisible : Today, Tomorrow, puis « in 4d ».
+  static String dueLabel(int daysLeft) {
+    if (daysLeft <= 0) return 'Today';
+    if (daysLeft == 1) return 'Tomorrow';
+    return 'in ${daysLeft}d';
+  }
 
   void _showEditDialog(BuildContext context) {
     final frontCtrl = TextEditingController(text: card.frontText);
@@ -159,9 +174,25 @@ class FlashcardTile extends StatelessWidget {
     final int daysLeft = reviewDate.difference(today).inDays;
 
     final bool isDue = daysLeft <= 0;
-    final String dueLabel = isDue ? 'Today' : 'in ${daysLeft}d';
     final colors = context.colors;
-    final Color dueColor = isDue ? colors.primary : colors.onSurfaceVariant;
+
+    // En mode sélection, la case à cocher remplace l'échéance
+    final Widget status = selectionMode
+        ? Icon(
+            isSelected
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked_rounded,
+            size: 22,
+            color: isSelected ? colors.primary : colors.outline,
+          )
+        : Text(
+            dueLabel(daysLeft),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isDue ? FontWeight.bold : FontWeight.w600,
+              color: isDue ? colors.primary : colors.onSurfaceVariant,
+            ),
+          );
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -174,71 +205,102 @@ class FlashcardTile extends StatelessWidget {
       ),
       child: InkWell(
         onTap: selectionMode ? onSelectToggle : () => _showActionModal(context),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        onLongPress: selectionMode ? null : onLongPress,
+        child: compact
+            ? _buildListRow(colors, status)
+            : _buildGridTile(colors, status),
+      ),
+    );
+  }
+
+  Widget _buildListRow(ColorScheme colors, Widget status) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          LevelBadge(level: card.level),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  card.frontText,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  card.backText,
+                  style: TextStyle(
+                    fontSize: cardFontSize,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          status,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGridTile(ColorScheme colors, Widget status) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  LevelBadge(level: card.level),
-                  if (selectionMode)
-                    Icon(
-                      isSelected
-                          ? Icons.check_circle_rounded
-                          : Icons.radio_button_unchecked_rounded,
-                      size: 22,
-                      color: isSelected ? colors.primary : colors.outline,
-                    )
-                  else
-                    Text(
-                      dueLabel,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: isDue ? FontWeight.bold : FontWeight.w600,
-                        color: dueColor,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Text(
-                    card.frontText,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: cardFontSize,
-                      height: 1.15,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              Divider(height: 6, thickness: 0.8, color: colors.outlineVariant),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Text(
-                    card.backText,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: cardFontSize,
-                      height: 1.15,
-                      color: colors.onSurfaceVariant,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
+              LevelBadge(level: card.level),
+              status,
             ],
           ),
-        ),
+          const SizedBox(height: 4),
+          Expanded(
+            child: Align(
+              alignment: Alignment.center,
+              child: Text(
+                card.frontText,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: cardFontSize,
+                  height: 1.15,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          Divider(height: 6, thickness: 0.8, color: colors.outlineVariant),
+          Expanded(
+            child: Align(
+              alignment: Alignment.center,
+              child: Text(
+                card.backText,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: cardFontSize,
+                  height: 1.15,
+                  color: colors.onSurfaceVariant,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

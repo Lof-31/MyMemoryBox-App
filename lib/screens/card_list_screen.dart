@@ -3,9 +3,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
 import '../services/csv_service.dart';
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/box_picker_dialog.dart';
 import '../widgets/flashcard_tile.dart';
+import '../widgets/level_badge.dart';
 
 enum CardSortType {
   reviewDate,
@@ -42,6 +44,33 @@ class _CardListScreenState extends State<CardListScreen> {
   bool _isAscending = true;
   bool _isSelecting = false;
   final Set<String> _selectedIds = {};
+  bool _isListView = false;
+
+  // Filtre rapide : null = toutes les cartes, _dueFilter = à revoir, 0-8 = une boîte
+  static const int _dueFilter = -1;
+  int? _filter;
+
+  final StorageService _storageService = StorageService();
+
+  @override
+  void initState() {
+    super.initState();
+    _storageService.getCardsListView().then((isList) {
+      if (mounted) setState(() => _isListView = isList);
+    });
+  }
+
+  void _toggleViewMode() {
+    setState(() => _isListView = !_isListView);
+    _storageService.saveCardsListView(_isListView);
+  }
+
+  void _startSelectionWith(String id) {
+    setState(() {
+      _isSelecting = true;
+      _selectedIds.add(id);
+    });
+  }
 
   @override
   void didUpdateWidget(CardListScreen oldWidget) {
@@ -186,19 +215,30 @@ class _CardListScreenState extends State<CardListScreen> {
       return AppBar(
         title: const Text('My Cards'),
         actions: [
-          if (widget.cards.isNotEmpty)
-            TextButton.icon(
-              onPressed: () => setState(() => _isSelecting = true),
-              icon: const Icon(Icons.checklist_rounded),
-              label: const Text('Select cards'),
-            ),
+          IconButton(
+            icon: Icon(_isListView
+                ? Icons.grid_view_rounded
+                : Icons.view_agenda_outlined),
+            tooltip: _isListView ? 'Grid view' : 'List view',
+            onPressed: _toggleViewMode,
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
+              if (value == 'select') setState(() => _isSelecting = true);
               if (value == 'import') _importCardsFromFile();
               if (value == 'export') _exportCards();
             },
             itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'select',
+                enabled: widget.cards.isNotEmpty,
+                child: const ListTile(
+                  leading: Icon(Icons.checklist_rounded),
+                  title: Text('Select cards'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
               const PopupMenuItem(
                 value: 'import',
                 child: ListTile(
@@ -271,7 +311,14 @@ class _CardListScreenState extends State<CardListScreen> {
           .toList();
     }
 
-    // 2. Application du critère de tri
+    // 2. Filtre rapide
+    if (_filter == _dueFilter) {
+      list = list.where((c) => c.isDue).toList();
+    } else if (_filter != null) {
+      list = list.where((c) => c.level == _filter).toList();
+    }
+
+    // 3. Application du critère de tri
     switch (_selectedSortType) {
       case CardSortType.reviewDate:
         list.sort((a, b) => a.nextReviewDate.compareTo(b.nextReviewDate));
@@ -287,7 +334,7 @@ class _CardListScreenState extends State<CardListScreen> {
         break;
     }
 
-    // 3. Application du sens (Ascendant / Descendant)
+    // 4. Application du sens (Ascendant / Descendant)
     if (!_isAscending) {
       list = list.reversed.toList();
     }
@@ -478,12 +525,74 @@ class _CardListScreenState extends State<CardListScreen> {
     );
   }
 
+  Widget _buildTile(Flashcard card, {bool compact = false}) {
+    return FlashcardTile(
+      card: card,
+      onDelete: widget.onDelete,
+      onEdit: widget.onEdit,
+      compact: compact,
+      selectionMode: _isSelecting,
+      isSelected: _selectedIds.contains(card.id),
+      onSelectToggle: () => _toggleSelected(card.id),
+      onLongPress: () => _startSelectionWith(card.id),
+    );
+  }
+
+  /// Filtres rapides : toutes, à revoir, puis une puce par boîte (0 à 8).
+  Widget _buildFilterChips() {
+    final dueCount = widget.cards.where((c) => c.isDue).length;
+    final levelCounts = <int, int>{};
+    for (final c in widget.cards) {
+      levelCounts[c.level] = (levelCounts[c.level] ?? 0) + 1;
+    }
+
+    Widget chip({
+      required String label,
+      required int? value,
+      Widget? avatar,
+    }) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: ChoiceChip(
+          avatar: avatar,
+          label: Text(label),
+          selected: _filter == value,
+          showCheckmark: false,
+          onSelected: (_) => setState(() => _filter = value),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      child: Row(
+        children: [
+          chip(label: 'All', value: null),
+          chip(label: 'Due · $dueCount', value: _dueFilter),
+          for (var level = 0; level <= 8; level++)
+            chip(
+              label: '(${levelCounts[level] ?? 0})',
+              value: level,
+              avatar: LevelBadge(level: level, size: 22),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final processedCards = _processedCards;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
-    return Scaffold(
+    // En mode sélection, le bouton retour quitte la sélection au lieu de fermer l'app
+    return PopScope(
+      canPop: !_isSelecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _exitSelection();
+      },
+      child: Scaffold(
       appBar: _buildAppBar(processedCards),
       body: Column(
         children: [
@@ -568,44 +677,44 @@ class _CardListScreenState extends State<CardListScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 6),
+          _buildFilterChips(),
 
-          // Grille des cartes
+          // Cartes, en grille ou en liste
           Expanded(
             child: processedCards.isEmpty
                 ? Center(
-              child: Text(
-                widget.cards.isEmpty
-                    ? 'No cards created yet.'
-                    : 'No cards match your search.',
-                style: TextStyle(color: context.colors.onSurfaceVariant),
-              ),
-            )
-                : GridView.builder(
-              padding: const EdgeInsets.fromLTRB(12, 6, 12, 80),
-              gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                childAspectRatio: 0.70,
-              ),
-              itemCount: processedCards.length,
-              itemBuilder: (context, index) {
-                final card = processedCards[index];
-                return FlashcardTile(
-                  card: card,
-                  onDelete: widget.onDelete,
-                  onEdit: widget.onEdit,
-                  selectionMode: _isSelecting,
-                  isSelected: _selectedIds.contains(card.id),
-                  onSelectToggle: () => _toggleSelected(card.id),
-                );
-              },
-            ),
+                    child: Text(
+                      widget.cards.isEmpty
+                          ? 'No cards created yet.'
+                          : 'No cards match your search or filter.',
+                      style: TextStyle(color: context.colors.onSurfaceVariant),
+                    ),
+                  )
+                : _isListView
+                    ? ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(12, 6, 12, 96),
+                        itemCount: processedCards.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) =>
+                            _buildTile(processedCards[index], compact: true),
+                      )
+                    : GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(12, 6, 12, 96),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          childAspectRatio: 0.70,
+                        ),
+                        itemCount: processedCards.length,
+                        itemBuilder: (context, index) =>
+                            _buildTile(processedCards[index]),
+                      ),
           ),
         ],
       ),
+    ),
     );
   }
 }
